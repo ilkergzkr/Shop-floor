@@ -1,0 +1,2747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-touch-fullscreen" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Shop Floor Report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.15);
+    --accent: #4f6ef7;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --text: #f0f0f8;
+    --muted: #8888aa;
+    --subtle: #4444aa33;
+    font-family: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(79,110,247,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,110,247,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  .screen { display: none !important; position: relative; z-index: 1; }
+  .screen.active { display: block !important; }
+
+  /* ===== LOGIN ===== */
+  #login-screen {
+    min-height: 100vh;
+    display: none !important;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 2rem;
+  }
+  #login-screen.active { display: flex !important; }
+  .login-logo {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .login-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, #f0f0f8, #8888cc);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .login-sub { color: var(--muted); font-size: 0.85rem; margin-bottom: 2.5rem; }
+  .login-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 100%; max-width: 380px;
+  }
+  .field { margin-bottom: 1.2rem; }
+  .field label { display: block; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 0.5rem; }
+  .field input {
+    width: 100%; padding: 0.75rem 1rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'DM Mono', monospace;
+    font-size: 0.9rem; outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .btn-primary {
+    width: 100%; padding: 0.85rem; background: var(--accent);
+    border: none; border-radius: 8px; color: #fff; font-family: 'Syne', sans-serif;
+    font-weight: 700; font-size: 0.9rem; cursor: pointer;
+    letter-spacing: 0.05em; transition: opacity 0.2s, transform 0.1s;
+    touch-action: manipulation;
+    -webkit-appearance: none;
+    appearance: none;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+    z-index: 1;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-primary:active { transform: scale(0.98); opacity: 0.85; }
+  .error-msg { color: var(--red); font-size: 0.8rem; margin-top: 0.75rem; text-align: center; display: none; }
+
+  /* ===== MANAGER ===== */
+  #manager-screen { min-height: 100vh; display: none !important; align-items: center; justify-content: center; flex-direction: column; padding: 2rem; }
+  #manager-screen.active { display: flex !important; }
+
+  /* ===== REGISTER ===== */
+  #register-screen { min-height: 100vh; display: none !important; align-items: center; justify-content: center; flex-direction: column; padding: 2rem; }
+  #register-screen.active { display: flex !important; }
+
+  /* ===== APP SHELL ===== */
+  #app-screen { min-height: 100vh; }
+  .topbar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,10,15,0.9); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.9rem 1.5rem;
+  }
+  .topbar-brand { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+  .topbar-user { display: flex; align-items: center; gap: 0.75rem; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+  }
+  .user-name { font-size: 0.8rem; color: var(--muted); }
+  .btn-logout { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 0.3rem 0.7rem; font-size: 0.75rem; cursor: pointer; font-family: 'Syne'; transition: all 0.2s; }
+  .btn-logout:hover { border-color: var(--red); color: var(--red); }
+
+  .page { display: none; padding: 1.5rem; max-width: 900px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* HOME */
+  .home-greeting { font-size: 0.8rem; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .home-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 2rem; }
+  .menu-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.5rem;
+    cursor: pointer; transition: all 0.2s; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 1rem;
+  }
+  .menu-card:hover { border-color: var(--accent); background: var(--surface2); transform: translateY(-1px); }
+  .menu-icon {
+    width: 48px; height: 48px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .menu-label { font-size: 1rem; font-weight: 700; }
+  .menu-desc { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+  .chevron { margin-left: auto; color: var(--muted); font-size: 1.2rem; }
+
+  /* PRODUCT SELECT */
+  .page-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+  .btn-back { background: none; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; font-family: 'Syne'; transition: all 0.2s; }
+  .btn-back:hover { border-color: var(--border2); color: var(--text); }
+  .page-title { font-size: 1.3rem; font-weight: 800; }
+
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; margin-bottom: 0.75rem; margin-top: 1.5rem; }
+  .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+  .product-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .product-card:hover { border-color: var(--accent); background: var(--surface2); }
+  .product-card.special { border-color: rgba(124,58,237,0.4); }
+  .product-card.special:hover { border-color: var(--accent2); }
+  .product-name { font-size: 0.85rem; font-weight: 700; }
+  .product-badge { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent2); margin-top: 0.25rem; }
+
+  /* ASSEMBLY SELECT */
+  .assembly-list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .assembly-item {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .assembly-item:hover { border-color: var(--accent); background: var(--surface2); }
+  .assembly-item.selected { border-color: var(--accent); background: rgba(79,110,247,0.1); }
+  .assembly-name { font-size: 0.9rem; font-weight: 600; }
+
+  /* REPORT FORM */
+  .report-header {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+    display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;
+  }
+  .report-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.3rem 0.75rem; border-radius: 20px;
+  }
+  .report-tag.product { background: rgba(79,110,247,0.2); color: #818cf8; }
+  .report-tag.assembly { background: rgba(16,185,129,0.2); color: #34d399; }
+  .report-date { margin-left: auto; font-size: 0.8rem; color: var(--muted); font-family: 'DM Mono'; }
+
+  .tasks-table { width: 100%; border-collapse: collapse; }
+  .tasks-table th {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--muted); padding: 0.6rem 1rem; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .tasks-table td { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+  .tasks-table tr:last-child td { border-bottom: none; }
+  .task-name { font-size: 0.85rem; font-weight: 500; }
+  .qty-input {
+    width: 80px; padding: 0.4rem 0.6rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'DM Mono'; font-size: 0.9rem;
+    outline: none; text-align: center; transition: border-color 0.2s;
+  }
+  .qty-input:focus { border-color: var(--accent); }
+
+  .notes-area {
+    width: 100%; padding: 0.75rem 1rem; margin-top: 1rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-family: 'Syne'; font-size: 0.85rem;
+    outline: none; resize: vertical; min-height: 80px; transition: border-color 0.2s;
+  }
+  .notes-area:focus { border-color: var(--accent); }
+  .notes-label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+
+  .submit-row { margin-top: 1.5rem; }
+  .btn-submit {
+    display: block; width: 100%; padding: 1rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; color: #fff; font-family: 'Syne';
+    font-weight: 800; font-size: 1rem; cursor: pointer; letter-spacing: 0.05em;
+    transition: opacity 0.2s, transform 0.1s; text-align: center;
+    -webkit-appearance: none; appearance: none;
+  }
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .success-toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: #1e293b; color: white; padding: 0.75rem 1.25rem;
+    border-radius: 50px; font-size: 0.85rem; font-weight: 600;
+    opacity: 0; transition: opacity 0.3s; z-index: 99999; white-space: nowrap;
+    display: flex; align-items: center; gap: 0.25rem;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  }
+  .success-toast.show { opacity: 1; }
+
+  /* ADMIN PANEL */
+  .admin-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+  .tab-btn {
+    padding: 0.5rem 1rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--muted); cursor: pointer; font-family: 'Syne';
+    font-size: 0.8rem; font-weight: 600; transition: all 0.2s;
+  }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .admin-tab { display: none; }
+  .admin-tab.active { display: block; }
+
+  .worker-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .worker-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+  .worker-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .worker-info { flex: 1; }
+  .worker-name { font-size: 0.9rem; font-weight: 700; }
+  .worker-role { font-size: 0.75rem; color: var(--muted); }
+  .worker-count { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .worker-count-label { font-size: 10px; color: var(--muted); }
+
+  .progress-row { margin-bottom: 0.5rem; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 0.25rem; }
+  .progress-label span:first-child { color: var(--muted); }
+  .progress-label span:last-child { font-family: 'DM Mono'; color: var(--text); }
+  .progress-bar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .progress-fill.blue { background: linear-gradient(90deg, var(--accent), #818cf8); }
+  .progress-fill.green { background: linear-gradient(90deg, var(--green), #34d399); }
+  .progress-fill.amber { background: linear-gradient(90deg, var(--amber), #fcd34d); }
+
+  .reports-list { }
+  .report-row {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+  }
+  .report-row-user { font-size: 0.8rem; font-weight: 700; min-width: 100px; }
+  .report-row-info { flex: 1; font-size: 0.8rem; color: var(--muted); }
+  .report-row-date { font-size: 0.75rem; font-family: 'DM Mono'; color: var(--muted); }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.2rem 0.6rem; border-radius: 12px;
+  }
+  .badge.sent { background: rgba(16,185,129,0.2); color: #34d399; }
+  .badge.pending { background: rgba(245,158,11,0.2); color: #fcd34d; }
+
+  .sheets-link-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  .sheets-link-box label { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; display: block; margin-bottom: 0.5rem; }
+  .sheets-link-box input {
+    width: 100%; padding: 0.7rem 1rem; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-family: 'DM Mono'; font-size: 0.8rem; outline: none;
+  }
+  .sheets-link-box input:focus { border-color: var(--accent); }
+  .btn-save-script { margin-top: 0.75rem; padding: 0.6rem 1.2rem; background: var(--accent); border: none; border-radius: 8px; color: white; font-family: 'Syne'; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+
+  .instructions-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem;
+  }
+  .instructions-box h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; }
+  .step { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: flex-start; }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: white; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-text { font-size: 0.82rem; color: var(--muted); line-height: 1.6; }
+  .step-text code { font-family: 'DM Mono'; color: var(--text); background: var(--surface2); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.78rem; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.85rem; }
+
+  /* SKILL CHECKBOXES */
+  .skill-check-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 0.75rem; border-radius: 8px;
+    cursor: pointer; transition: background 0.15s; margin-bottom: 0.35rem;
+  }
+  .skill-check-item:hover { background: var(--surface2); }
+  .skill-check-item input[type=checkbox] { display:none; }
+  .skill-checkbox-box {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 2px solid rgba(124,58,237,0.5); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; background: transparent;
+  }
+  .skill-check-item.checked .skill-checkbox-box {
+    background: var(--accent2); border-color: var(--accent2);
+  }
+  .skill-checkbox-check { color: white; font-size: 11px; display:none; }
+  .skill-check-item.checked .skill-checkbox-check { display:block; }
+  .skill-check-label { font-size: 0.85rem; font-weight: 500; }
+
+  /* SKILL PROGRESS BAR (manager view) */
+  .skill-bar-section { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .skill-bar-title { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; color: var(--accent2); text-transform: uppercase; margin-bottom: 0.6rem; }
+  .skill-master-bar-wrap { position: relative; height: 24px; background: var(--surface2); border-radius: 12px; overflow: hidden; margin-bottom: 0.5rem; }
+  .skill-master-bar-fill { height: 100%; border-radius: 12px; background: linear-gradient(90deg, #7c3aed, #4f6ef7); transition: width 1s ease; display:flex; align-items:center; }
+  .skill-master-pct { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; font-weight: 700; font-family: 'DM Mono'; color: var(--text); }
+  .skill-segment-labels { display: flex; gap: 0; margin-bottom: 0.75rem; }
+  .skill-seg {
+    flex: 1; font-size: 9px; text-align: center; color: var(--muted);
+    padding: 0.25rem 0.1rem; border-right: 1px solid var(--border);
+    line-height: 1.2; transition: color 0.2s;
+  }
+  .skill-seg:last-child { border-right: none; }
+  .skill-seg.mastered { color: #a78bfa; font-weight: 700; }
+
+  /* WEEKLY TABLE */
+  .weekly-worker-block { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+  .weekly-worker-name { font-size: 0.95rem; font-weight: 800; margin-bottom: 1rem; display:flex; align-items:center; gap:0.6rem; }
+  .weekly-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .weekly-table th { 
+    font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); padding: 0.5rem 0.6rem; text-align: right; border-bottom: 1px solid var(--border);
+  }
+  .weekly-table th:first-child { text-align: left; }
+  .weekly-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border); text-align: right; font-family: 'DM Mono'; }
+  .weekly-table td:first-child { text-align: left; font-family: 'Syne'; color: var(--muted); font-size: 0.78rem; }
+  .weekly-table tr:last-child td { border-bottom: none; font-weight: 700; color: var(--accent); }
+  .weekly-table .week-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--accent); }
+  .weekly-nav { display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem; }
+  .weekly-nav button { background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--muted); padding:0.3rem 0.7rem; cursor:pointer; font-family:'Syne'; font-size:0.78rem; transition:all 0.2s; }
+  .weekly-nav button:hover { border-color:var(--accent); color:var(--text); }
+  .weekly-nav .week-range { font-size:0.82rem; font-weight:700; font-family:'DM Mono'; color:var(--text); flex:1; text-align:center; }
+  .cell-zero { color: var(--border2) !important; }
+
+  @media (max-width: 480px) {
+    .topbar { padding: 0.75rem 1rem; }
+    .page { padding: 1rem; }
+    .product-grid { grid-template-columns: repeat(2, 1fr); }
+    .qty-input { width: 70px; }
+    .login-title { font-size: 1.6rem; }
+  }
+
+  .user-list-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    display: flex; gap: 1rem; align-items: center;
+  }
+  .user-list-avatar {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white; flex-shrink: 0;
+  }
+  .user-list-info { flex: 1; min-width: 0; }
+  .user-list-name { font-size: 0.88rem; font-weight: 700; }
+  .user-list-meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.15rem; font-family: 'DM Mono'; }
+  .user-list-stats { text-align: right; flex-shrink: 0; }
+  .user-list-count { font-size: 1.3rem; font-weight: 800; color: var(--accent); line-height: 1; }
+  .user-list-count-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .btn-delete-user {
+    background: none; border: 1px solid rgba(239,68,68,0.3); border-radius: 6px;
+    color: rgba(239,68,68,0.6); padding: 0.25rem 0.6rem; font-size: 0.7rem;
+    cursor: pointer; font-family: 'Syne'; transition: all 0.2s; margin-top: 0.4rem;
+    display: block; width: 100%;
+  }
+  .btn-delete-user:hover { background: rgba(239,68,68,0.1); border-color: var(--red); color: var(--red); }
+  .users-summary {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem;
+    display: flex; gap: 1.5rem; align-items: center;
+  }
+  .users-summary-stat { text-align: center; }
+  .users-summary-num { font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1; }
+  .users-summary-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 0.2rem; }
+
+  /* ===== CATALOG EDITOR ===== */
+  .catalog-product-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; margin-bottom: 1rem; overflow: hidden;
+  }
+  .catalog-product-header {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 1rem 1.25rem; cursor: pointer;
+    border-bottom: 1px solid transparent; transition: background 0.15s;
+  }
+  .catalog-product-header:hover { background: var(--surface2); }
+  .catalog-product-header.open { border-bottom-color: var(--border); }
+  .catalog-product-icon {
+    width: 34px; height: 34px; border-radius: 8px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .catalog-product-name { font-size: 0.92rem; font-weight: 700; flex: 1; }
+  .catalog-product-meta { font-size: 0.72rem; color: var(--muted); }
+  .catalog-chevron { color: var(--muted); font-size: 1rem; transition: transform 0.2s; }
+  .catalog-chevron.open { transform: rotate(90deg); }
+  .catalog-product-body { display: none; padding: 1rem 1.25rem; }
+  .catalog-product-body.open { display: block; }
+
+  .catalog-special-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent2); background: rgba(124,58,237,0.15);
+    border: 1px solid rgba(124,58,237,0.3); border-radius: 10px;
+    padding: 0.15rem 0.5rem;
+  }
+
+  .catalog-assembly-row {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 0.6rem; overflow: hidden;
+  }
+  .catalog-assembly-header {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.7rem 1rem; cursor: pointer; transition: background 0.15s;
+  }
+  .catalog-assembly-header:hover { background: rgba(79,110,247,0.07); }
+  .catalog-assembly-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+  }
+  .catalog-assembly-name { font-size: 0.83rem; font-weight: 600; flex: 1; }
+  .catalog-assembly-count { font-size: 0.72rem; color: var(--muted); }
+  .catalog-assembly-body { display: none; padding: 0.6rem 1rem 0.8rem 2rem; border-top: 1px solid var(--border); }
+  .catalog-assembly-body.open { display: block; }
+
+  .catalog-task-row {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .catalog-task-row:last-of-type { border-bottom: none; }
+  .catalog-task-name { font-size: 0.8rem; color: var(--muted); flex: 1; }
+  .btn-remove-task {
+    background: none; border: none; color: rgba(239,68,68,0.45);
+    font-size: 0.85rem; cursor: pointer; padding: 0.1rem 0.3rem;
+    border-radius: 4px; transition: all 0.15s; line-height: 1;
+  }
+  .btn-remove-task:hover { color: var(--red); background: rgba(239,68,68,0.1); }
+
+  .catalog-add-row {
+    display: flex; gap: 0.5rem; margin-top: 0.6rem; align-items: center;
+  }
+  .catalog-add-input {
+    flex: 1; padding: 0.4rem 0.7rem;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'Syne'; font-size: 0.8rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .catalog-add-input:focus { border-color: var(--accent); }
+  .btn-catalog-add {
+    background: rgba(79,110,247,0.15); border: 1px solid rgba(79,110,247,0.35);
+    border-radius: 6px; color: var(--accent); font-family: 'Syne';
+    font-size: 0.78rem; font-weight: 700; cursor: pointer;
+    padding: 0.4rem 0.75rem; transition: all 0.15s; white-space: nowrap;
+  }
+  .btn-catalog-add:hover { background: rgba(79,110,247,0.25); }
+  .btn-catalog-danger {
+    background: none; border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 6px; color: rgba(239,68,68,0.7); font-family: 'Syne';
+    font-size: 0.75rem; font-weight: 600; cursor: pointer;
+    padding: 0.3rem 0.65rem; transition: all 0.15s;
+  }
+  .btn-catalog-danger:hover { background: rgba(239,68,68,0.1); border-color: var(--red); color: var(--red); }
+
+  .catalog-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 0.75rem;
+    margin-top: 1.25rem; display: flex; align-items: center; justify-content: space-between;
+  }
+  .catalog-add-product-box {
+    background: var(--surface); border: 1px dashed rgba(79,110,247,0.35);
+    border-radius: 12px; padding: 1rem 1.25rem; margin-top: 0.5rem;
+  }
+
+  /* ce-name: see below in iOS section for full definition */
+
+  /* Settings dropdown */
+  .catalog-settings-wrap { position: relative; flex-shrink: 0; }
+  .btn-catalog-settings {
+    background: none; border: 1px solid transparent;
+    border-radius: 6px; color: var(--muted);
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 0.95rem; transition: all 0.15s; flex-shrink: 0;
+  }
+  .btn-catalog-settings:hover { background: var(--surface2); border-color: var(--border); color: var(--text); }
+  .catalog-dropdown {
+    position: fixed; z-index: 9999;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 10px; overflow: hidden; min-width: 140px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    display: none;
+  }
+  .catalog-dropdown.open { display: block; }
+  .catalog-dd-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.65rem 1rem; font-size: 0.82rem; font-weight: 600;
+    cursor: pointer; transition: background 0.12s; color: var(--text);
+    font-family: 'Syne', sans-serif; border: none; background: none; width: 100%; text-align: left;
+  }
+  .catalog-dd-item:hover { background: var(--surface2); }
+  .catalog-dd-item.danger { color: var(--red); }
+  .catalog-dd-item.danger:hover { background: rgba(239,68,68,0.1); }
+  .catalog-dd-sep { height: 1px; background: var(--border); margin: 0.2rem 0; }
+
+  /* ===== LANGUAGE SWITCHER (topbar) ===== */
+  .lang-switcher {
+    display: flex; align-items: center; gap: 0.25rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 0.2rem 0.25rem;
+  }
+  .lang-switcher-btn {
+    display: flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.55rem; border-radius: 14px; border: none;
+    background: none; color: var(--muted); font-family: 'Syne', sans-serif;
+    font-size: 0.72rem; font-weight: 700; cursor: pointer;
+    transition: all 0.18s; letter-spacing: 0.05em;
+  }
+  .lang-switcher-btn.active { background: var(--accent); color: #fff; }
+  .lang-switcher-btn:not(.active):hover { color: var(--text); }
+
+  /* Login page compact lang row */
+  .login-lang-row {
+    display: flex; justify-content: center; margin-bottom: 1.5rem;
+  }
+
+  /* Password eye toggle */
+  .pass-wrap { position: relative; }
+  .pass-wrap input { padding-right: 2.8rem !important; }
+  .btn-eye {
+    position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1rem; padding: 0.2rem; line-height: 1; transition: color 0.15s;
+  }
+  .btn-eye:hover { color: var(--text); }
+
+  /* ce-name: locked by default, only editable when .ce-editing */
+  .ce-name {
+    outline: none; border-radius: 4px;
+    padding: 1px 4px; margin: -1px -4px;
+    cursor: default; transition: background 0.15s;
+    min-width: 20px; display: inline-block;
+    pointer-events: none; /* not interactive until editing */
+  }
+  .ce-name.ce-editing {
+    cursor: text; pointer-events: auto;
+    background: rgba(79,110,247,0.12);
+    box-shadow: 0 0 0 2px rgba(79,110,247,0.4);
+  }
+
+  /* Confirm tick button */
+  .btn-ce-confirm {
+    display: none; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 6px; border: none;
+    background: rgba(16,185,129,0.2); color: #10b981;
+    font-size: 0.9rem; cursor: pointer; flex-shrink: 0;
+    transition: background 0.15s; margin-left: 0.3rem;
+  }
+  .btn-ce-confirm:hover { background: rgba(16,185,129,0.35); }
+  .btn-ce-confirm.visible { display: flex; }
+
+  /* ===== iOS / SAFE AREA ===== */
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  .topbar {
+    padding-top: calc(0.9rem + env(safe-area-inset-top));
+  }
+  /* Prevent iOS zoom on input focus (font-size >= 16px) */
+  .field input, .qty-input, .notes-area, .sheets-link-box input {
+    font-size: 16px !important;
+  }
+  /* iOS tap highlight remove */
+  * { -webkit-tap-highlight-color: transparent; }
+  button, .menu-card, .product-card, .assembly-item, .skill-check-item,
+  .btn-primary, .btn-back, .btn-logout, .btn-secondary, .btn-danger, .btn-submit, .tab-btn {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    cursor: pointer;
+  }
+  /* iOS input styling */
+  input, textarea, select {
+    -webkit-appearance: none;
+    border-radius: 8px;
+  }
+
+  /* ===== PROFILE / SETTINGS PAGE ===== */
+  .profile-avatar-big {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 800; color: white;
+    margin: 0 auto 1.25rem;
+  }
+  .profile-name-display {
+    text-align: center; font-size: 1.3rem; font-weight: 800; margin-bottom: 0.25rem;
+  }
+  .profile-username-display {
+    text-align: center; font-size: 0.8rem; color: var(--muted); margin-bottom: 2rem;
+  }
+  .settings-section {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;
+  }
+  .settings-section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+    color: var(--accent); text-transform: uppercase; margin-bottom: 1rem;
+  }
+  .btn-danger {
+    width: 100%; padding: 0.85rem; background: rgba(239,68,68,0.15);
+    border: 1px solid rgba(239,68,68,0.4); border-radius: 8px; color: var(--red);
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
+    cursor: pointer; letter-spacing: 0.05em; transition: all 0.2s; margin-top: 0.5rem;
+  }
+  .btn-danger:hover { background: rgba(239,68,68,0.25); }
+  .btn-secondary {
+    width: 100%; padding: 0.85rem; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 8px; color: var(--text);
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem;
+    cursor: pointer; letter-spacing: 0.05em; transition: all 0.2s;
+  }
+  .btn-secondary:hover { border-color: var(--border2); }
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
+  }
+  .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .info-row-label { color: var(--muted); font-size: 0.8rem; }
+  .info-row-value { font-weight: 600; font-family: 'DM Mono'; font-size: 0.82rem; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="screen active">
+  <div class="login-logo">Haply Robotics</div>
+  <div class="login-title">Shop Floor</div>
+  <div class="login-sub" id="login-sub-text">Daily Report System</div>
+
+  <div class="login-lang-row">
+    <div class="lang-switcher">
+      <button class="lang-switcher-btn active" onclick="setLang('en')" id="lang-btn-en">
+        <span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span> EN
+      </button>
+      <button class="lang-switcher-btn" onclick="setLang('fr')" id="lang-btn-fr">
+        <svg width="16" height="11" viewBox="0 0 20 13" style="border-radius:2px;flex-shrink:0;"><rect width="20" height="13" fill="#003399"/><rect x="9" width="2" height="13" fill="white"/><rect y="5.5" width="20" height="2" fill="white"/></svg> FR
+      </button>
+    </div>
+  </div>
+
+  <div class="login-box">
+    <div class="field">
+      <label id="lbl-login-user">Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="field">
+      <label id="lbl-login-pass">Password</label>
+      <div class="pass-wrap">
+        <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password">
+        <button class="btn-eye" type="button" onclick="togglePass('login-pass',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doLogin()" id="btn-login-submit">Sign In →</button>
+    <p id="login-error" class="error-msg">Invalid username or password.</p>
+    <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:var(--muted);">
+      <span id="login-register-text">No account?</span> <span onclick="showRegister()" style="color:var(--accent); cursor:pointer; font-weight:600;" id="login-register-link">Register here</span>
+    </p>
+  </div>
+</div>
+
+<!-- MANAGER LOGIN -->
+<div id="manager-screen" class="screen">
+  <div class="login-logo" style="color:#7c3aed;">Haply Robotics</div>
+  <div class="login-title" style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Manager Access</div>
+  <div class="login-sub">Restricted — Authorized Personnel Only</div>
+  <div class="login-box" style="border-color:rgba(124,58,237,0.35);">
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1.5rem;padding:0.6rem 0.9rem;background:rgba(124,58,237,0.1);border-radius:8px;border:1px solid rgba(124,58,237,0.25);">
+      <span style="font-size:1rem;">🔒</span>
+      <span style="font-size:0.78rem;color:#a78bfa;font-weight:600;">This login is not visible to workers</span>
+    </div>
+    <div class="field">
+      <label>Manager Username</label>
+      <input type="text" id="mgr-user" placeholder="Enter manager username" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Manager Password</label>
+      <div class="pass-wrap">
+        <input type="password" id="mgr-pass" placeholder="Enter manager password" autocomplete="off">
+        <button class="btn-eye" type="button" onclick="togglePass('mgr-pass',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <button class="btn-primary" style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);" onclick="doManagerLogin()">Access Panel →</button>
+    <p id="mgr-error" class="error-msg"></p>
+    <p style="text-align:center; margin-top:1.25rem;">
+      <span onclick="showLogin()" style="font-size:0.78rem;color:var(--muted); cursor:pointer;">← Back to worker login</span>
+    </p>
+  </div>
+</div>
+
+<!-- REGISTER -->
+<div id="register-screen" class="screen">
+  <div class="login-logo">Haply Robotics</div>
+  <div class="login-title">Create Account</div>
+  <div class="login-sub">Set up your worker profile</div>
+  <div class="login-box">
+    <div class="field">
+      <label>Full Name</label>
+      <input type="text" id="reg-name" placeholder="Your full name" autocomplete="name">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="reg-email" placeholder="your@email.com" autocomplete="email">
+    </div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="reg-user" placeholder="Choose a username" autocomplete="username">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <div class="pass-wrap">
+        <input type="password" id="reg-pass" placeholder="Choose a password" autocomplete="new-password">
+        <button class="btn-eye" type="button" onclick="togglePass('reg-pass',this)" tabindex="-1">👁</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="doRegister()">Create Account →</button>
+    <p id="reg-error" class="error-msg"></p>
+    <p style="text-align:center; margin-top:1rem; font-size:0.8rem; color:var(--muted);">
+      Already have an account? <span onclick="showLogin()" style="color:var(--accent); cursor:pointer; font-weight:600;">Sign in</span>
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-screen" class="screen">
+  <div class="topbar">
+    <div class="topbar-brand">Shop Floor</div>
+    <div class="topbar-user">
+      <div class="lang-switcher" style="margin-right:0.25rem;">
+        <button class="lang-switcher-btn active" onclick="setLang('en')" id="lang-btn-en-app">
+          <span>🏴󠁧󠁢󠁥󠁮󠁧󠁿</span> EN
+        </button>
+        <button class="lang-switcher-btn" onclick="setLang('fr')" id="lang-btn-fr-app">
+          <svg width="14" height="9" viewBox="0 0 20 13" style="border-radius:1px;flex-shrink:0;"><rect width="20" height="13" fill="#003399"/><rect x="9" width="2" height="13" fill="white"/><rect y="5.5" width="20" height="2" fill="white"/></svg> FR
+        </button>
+      </div>
+      <div class="avatar" id="user-avatar"></div>
+      <div class="user-name" id="user-display"></div>
+      <button class="btn-logout" id="btn-logout-main" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- HOME PAGE -->
+  <div id="page-home" class="page active">
+    <div class="home-greeting">Good day,</div>
+    <div class="home-title" id="home-welcome">Worker</div>
+
+    <div class="menu-card" onclick="goTo('page-report')">
+      <div class="menu-icon">📋</div>
+      <div>
+        <div class="menu-label">Shop Floor Daily Report</div>
+        <div class="menu-desc">Submit your daily production report</div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+
+    <div id="admin-menu-card" class="menu-card" onclick="goTo('page-admin')" style="display:none;">
+      <div class="menu-icon" style="background: linear-gradient(135deg,#7c3aed,#4f6ef7);">⚡</div>
+      <div>
+        <div class="menu-label">Admin Panel</div>
+        <div class="menu-desc">View team progress &amp; all reports</div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+
+    <div class="menu-card" onclick="goTo('page-profile')">
+      <div class="menu-icon" style="background: linear-gradient(135deg,#0f766e,#10b981);">👤</div>
+      <div>
+        <div class="menu-label">My Profile</div>
+        <div class="menu-desc">Settings, change password</div>
+      </div>
+      <div class="chevron">›</div>
+    </div>
+  </div>
+
+  <!-- REPORT: PRODUCT SELECT -->
+  <div id="page-report" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="goTo('page-home')">← Back</button>
+      <div class="page-title">Select Product</div>
+    </div>
+    <div id="product-grid-dynamic"></div>
+  </div>
+
+  <!-- REPORT: ASSEMBLY SELECT -->
+  <div id="page-assembly" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="goTo('page-report')">← Back</button>
+      <div class="page-title" id="assembly-title">Select Assembly</div>
+    </div>
+    <div class="assembly-list" id="assembly-list"></div>
+  </div>
+
+  <!-- REPORT: FORM -->
+  <div id="page-form" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="goTo('page-assembly')">← Back</button>
+      <div class="page-title">Daily Report</div>
+    </div>
+
+    <div class="report-header">
+      <span class="report-tag product" id="form-product-tag"></span>
+      <span class="report-tag assembly" id="form-assembly-tag"></span>
+      <div style="margin-left:auto; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end;">
+        <span class="report-date" id="form-date"></span>
+        <div id="backdate-btn" onclick="toggleBackdatePicker()" style="display:flex;align-items:center;gap:0.3rem;cursor:pointer;padding:0.25rem 0.6rem;border-radius:20px;border:1px dashed rgba(255,255,255,0.15);font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.05em;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(79,110,247,0.5)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)';this.style.color='var(--muted)'">
+          <span>📅</span> Backdate
+        </div>
+      </div>
+    </div>
+
+    <!-- Backdate picker dropdown -->
+    <div id="backdate-picker" style="display:none; background:var(--surface2); border:1px solid rgba(79,110,247,0.3); border-radius:10px; padding:0.9rem 1rem; margin-bottom:1rem; display:none;">
+      <div id="backdate-title" style="font-size:10px;font-weight:700;letter-spacing:0.12em;color:var(--accent);text-transform:uppercase;margin-bottom:0.5rem;">Select Report Date</div>
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;">
+        <input type="date" id="backdate-input" onchange="applyBackdate(this.value)"
+          style="background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text);padding:0.4rem 0.7rem;font-family:'DM Mono';font-size:0.85rem;outline:none;cursor:pointer;">
+        <button id="backdate-reset-btn" onclick="clearBackdate()" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:0.35rem 0.7rem;font-size:0.75rem;cursor:pointer;font-family:'Syne';">Reset to Today</button>
+      </div>
+      <div id="backdate-warning" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;">⚠ Only use this if you forgot to submit on the actual work day.</div>
+    </div>
+
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden;">
+      <table class="tasks-table">
+        <thead>
+          <tr>
+            <th id="th-task">Task / Operation</th>
+            <th id="th-qty" style="text-align:center;">QTY</th>
+          </tr>
+        </thead>
+        <tbody id="tasks-body"></tbody>
+      </table>
+    </div>
+
+    <!-- LEARNED SKILLS SECTION (only for Head Assembly) -->
+    <div id="learned-skills-section" style="display:none; margin-top:1.5rem;">
+      <div class="notes-label" id="skills-label" style="margin-top:0;">Skills Learned / Mastered</div>
+      <div style="background:var(--surface); border:1px solid rgba(124,58,237,0.3); border-radius:12px; padding:1rem;">
+        <div id="skills-desc" style="font-size:0.78rem; color:var(--muted); margin-bottom:0.75rem;">Select all tasks you have learned or mastered in this assembly:</div>
+        <div id="skills-checkboxes"></div>
+      </div>
+    </div>
+
+    <div class="notes-label" id="notes-label">Notes / Others</div>
+    <textarea class="notes-area" id="report-notes" placeholder="Any additional notes, issues, or observations..."></textarea>
+
+    <div class="submit-row">
+      <button class="btn-submit" id="submit-btn" onclick="submitReport()">Upload Report →</button>
+    </div>
+    <p id="submit-status" style="text-align:center; font-size:0.8rem; color:var(--muted); margin-top:0.5rem; display:none;"></p>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="page-admin" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="goTo('page-home')">← Back</button>
+      <div class="page-title" id="admin-panel-title">Admin Panel</div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-progress')" id="tab-btn-progress">Team Progress</button>
+      <button class="tab-btn" onclick="switchTab('tab-weekly')" id="tab-btn-weekly">Weekly Output</button>
+      <button class="tab-btn" onclick="switchTab('tab-reports')" id="tab-btn-reports">All Reports</button>
+      <button class="tab-btn" onclick="switchTab('tab-users')" id="tab-btn-users">👥 Users</button>
+      <button class="tab-btn" onclick="switchTab('tab-catalog')" id="tab-btn-catalog">🗂 Catalog</button>
+      <button class="tab-btn" onclick="switchTab('tab-settings')" id="tab-btn-settings">Settings</button>
+    </div>
+
+    <div id="tab-progress" class="admin-tab active">
+      <div id="workers-list"></div>
+    </div>
+
+    <div id="tab-weekly" class="admin-tab">
+      <div id="weekly-output"></div>
+    </div>
+
+    <div id="tab-reports" class="admin-tab">
+      <div id="reports-list-admin"></div>
+    </div>
+
+    <div id="tab-catalog" class="admin-tab">
+      <div id="catalog-editor"></div>
+    </div>
+
+    <div id="tab-users" class="admin-tab">
+      <div id="users-list-admin"></div>
+    </div>
+
+    <div id="tab-settings" class="admin-tab">      <div class="sheets-link-box">
+        <label>Google Apps Script URL</label>
+        <input type="url" id="script-url-input" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec">
+        <button class="btn-save-script" onclick="saveScriptUrl()">Save URL</button>
+      </div>
+      <div class="instructions-box">
+        <h3>How to set up Google Sheets integration</h3>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">Open <strong>Google Sheets</strong> and create a new spreadsheet. Name it <code>Shop Floor Reports</code>.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">Go to <strong>Extensions → Apps Script</strong> and paste the script below into the editor.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">Click <strong>Deploy → New deployment</strong>. Choose type: <code>Web App</code>. Set "Who has access" to <code>Anyone</code>. Copy the deployment URL.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">Paste the URL above in the field and click <strong>Save URL</strong>.</div>
+        </div>
+        <div style="background:var(--surface2); border-radius:8px; padding:1rem; margin-top:1rem;">
+          <div style="font-size:10px; font-weight:700; letter-spacing:0.1em; color:var(--accent); text-transform:uppercase; margin-bottom:0.75rem;">Apps Script Code</div>
+          <pre style="font-family:'DM Mono'; font-size:0.72rem; color:var(--muted); white-space:pre-wrap; line-height:1.6;">function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp
+      .getActiveSpreadsheet()
+      .getActiveSheet();
+
+    // Body comes as plain text (no-cors mode from browser)
+    var raw = (e.postData && e.postData.contents) ? e.postData.contents : '{}';
+    var data = JSON.parse(raw);
+
+    // Add header row if sheet is empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        'Timestamp','Date','Worker',
+        'Product','Assembly','Task',
+        'QTY','Notes'
+      ]);
+    }
+
+    // Write each task as its own row
+    (data.tasks || []).forEach(function(task) {
+      sheet.appendRow([
+        new Date().toISOString(),
+        data.date   || '',
+        data.worker || '',
+        data.product  || '',
+        data.assembly || '',
+        task.name || '',
+        task.qty  || 0,
+        data.notes || ''
+      ]);
+    });
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'ok' }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// GET handler for quick health-check (visit the URL in browser to verify)
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({ status: 'ok', message: 'Shop Floor Script is live!' }))
+    .setMimeType(ContentService.MimeType.JSON);
+}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE / SETTINGS PAGE -->
+  <div id="page-profile" class="page">
+    <div class="page-header">
+      <button class="btn-back" onclick="goTo('page-home')">← Back</button>
+      <div class="page-title" id="profile-page-title">My Profile</div>
+    </div>
+
+    <div class="profile-avatar-big" id="profile-avatar-big"></div>
+    <div class="profile-name-display" id="profile-name-display"></div>
+    <div class="profile-username-display" id="profile-username-display"></div>
+
+    <!-- Account Info -->
+    <div class="settings-section">
+      <div class="settings-section-title" id="profile-section-info">Account Info</div>
+      <div class="info-row">
+        <span class="info-row-label" id="profile-lbl-name">Full Name</span>
+        <span class="info-row-value" id="profile-info-name">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label" id="profile-lbl-user">Username</span>
+        <span class="info-row-value" id="profile-info-user">—</span>
+      </div>
+      <div class="info-row">
+        <span class="info-row-label" id="profile-lbl-email">Email</span>
+        <span class="info-row-value" id="profile-info-email">—</span>
+      </div>
+    </div>
+
+    <!-- Edit Name -->
+    <div class="settings-section">
+      <div class="settings-section-title" id="profile-section-edit">Edit Profile</div>
+      <div class="field">
+        <label id="profile-edit-lbl-name">Full Name</label>
+        <input type="text" id="profile-edit-name" placeholder="Your full name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label id="profile-edit-lbl-email">Email</label>
+        <input type="email" id="profile-edit-email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <button class="btn-primary" id="profile-save-btn" onclick="saveProfileInfo()">Save Changes</button>
+    </div>
+
+    <!-- Change Password -->
+    <div class="settings-section">
+      <div class="settings-section-title" id="profile-section-pass">Change Password</div>
+      <div class="field">
+        <label id="profile-lbl-curpass">Current Password</label>
+        <input type="password" id="pass-current" placeholder="Enter current password" autocomplete="current-password">
+      </div>
+      <div class="field">
+        <label id="profile-lbl-newpass">New Password</label>
+        <input type="password" id="pass-new" placeholder="Enter new password" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label id="profile-lbl-confpass">Confirm New Password</label>
+        <input type="password" id="pass-confirm" placeholder="Repeat new password" autocomplete="new-password">
+      </div>
+      <p id="pass-error" class="error-msg"></p>
+      <button class="btn-primary" id="profile-update-pass-btn" onclick="changePassword()" style="margin-top:0.25rem;">Update Password</button>
+    </div>
+
+    <!-- Logout -->
+    <div class="settings-section">
+      <div class="settings-section-title" id="profile-section-session">Session</div>
+      <button class="btn-danger" id="profile-signout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+</div><!-- end app-screen -->
+
+<div class="success-toast" id="toast"></div>
+
+<!-- Global catalog context menu -->
+<div id="catalog-global-menu" style="position:fixed;z-index:99999;display:none;background:var(--surface);border:1px solid var(--border2);border-radius:10px;overflow:hidden;min-width:150px;box-shadow:0 8px 28px rgba(0,0,0,0.65);">
+  <button class="catalog-dd-item" onclick="catalogMenuAction('rename')">✏️ Rename</button>
+  <div class="catalog-dd-sep"></div>
+  <button class="catalog-dd-item danger" id="cgm-delete-btn" onclick="catalogMenuAction('delete')">🗑 Delete</button>
+</div>
+
+<!-- Delete confirm modal -->
+<div id="delete-modal" style="display:none;position:fixed;inset:0;z-index:999999;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:1.75rem;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.7);">
+    <div style="font-size:1.5rem;margin-bottom:0.75rem;">🗑</div>
+    <div style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;" id="delete-modal-title">Delete?</div>
+    <div style="font-size:0.82rem;color:var(--muted);margin-bottom:1.5rem;" id="delete-modal-msg">This cannot be undone.</div>
+    <div style="display:flex;gap:0.75rem;">
+      <button onclick="closeDeleteModal()" style="flex:1;padding:0.7rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'Syne';font-weight:600;font-size:0.85rem;cursor:pointer;">Cancel</button>
+      <button id="delete-modal-confirm" onclick="executeDelete()" style="flex:1;padding:0.7rem;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:8px;color:var(--red);font-family:'Syne';font-weight:700;font-size:0.85rem;cursor:pointer;">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase compat CDN (no ES module needed) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase Setup (compat SDK) ──
+const firebaseConfig = {
+  apiKey: "AIzaSyD7aXCSOT86sKt22AbpnOeYomk535s70TA",
+  authDomain: "haply-shop-floor.firebaseapp.com",
+  projectId: "haply-shop-floor",
+  storageBucket: "haply-shop-floor.firebasestorage.app",
+  messagingSenderId: "189555999978",
+  appId: "1:189555999978:web:37e2fd5e4f732f86398393"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+
+
+// ── In-memory cache ──
+let _users = [];
+let _reports = [];
+let _catalog = null;
+let _skills = {};
+let _scriptUrl = '';
+
+async function loadAllFromFirestore() {
+  showLoadingOverlay(true);
+  try {
+    const [usersSnap, reportsSnap, catSnap, skillsSnap, settingsSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('reports').orderBy('timestamp', 'desc').get(),
+      db.doc('config/catalog').get(),
+      db.collection('skills').get(),
+      db.doc('config/settings').get()
+    ]);
+    _users = usersSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _reports = reportsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    _catalog = catSnap.exists ? catSnap.data() : JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+    skillsSnap.docs.forEach(d => { _skills[d.id] = d.data().list || []; });
+    _scriptUrl = settingsSnap.exists ? (settingsSnap.data().scriptUrl || '') : '';
+    startListeners();
+  } catch(e) {
+    console.error('Firestore load error:', e);
+    showToast('⚠ Connection error. Check Firebase setup.');
+  } finally {
+    showLoadingOverlay(false);
+  }
+}
+
+function showLoadingOverlay(show) {
+  let el = document.getElementById('loading-overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'loading-overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(10,10,15,0.92);z-index:999999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;';
+    el.innerHTML = '<div style="width:36px;height:36px;border:3px solid rgba(79,110,247,0.2);border-top-color:#4f6ef7;border-radius:50%;animation:spin 0.7s linear infinite;"></div><div style="font-size:0.85rem;color:#8888aa;font-family:Syne,sans-serif;">Connecting to database…</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+    document.body.appendChild(el);
+  }
+  el.style.display = show ? 'flex' : 'none';
+}
+
+function startListeners() {
+  db.collection('users').onSnapshot(snap => {
+    _users = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    tryRefreshAdmin();
+  });
+  db.collection('reports').orderBy('timestamp', 'desc').onSnapshot(snap => {
+    _reports = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    tryRefreshAdmin();
+  });
+  db.doc('config/catalog').onSnapshot(snap => {
+    if (snap.exists) {
+      _catalog = snap.data();
+      renderProductGrid();
+      const catTab = document.getElementById('tab-catalog');
+      if (catTab && catTab.closest('.admin-tab.active')) renderCatalogEditor();
+    }
+  });
+}
+
+function tryRefreshAdmin() {
+  const pg = document.querySelector('.page.active');
+  if (!pg || pg.id !== 'page-admin') return;
+  const activeTab = document.querySelector('.admin-tab.active');
+  if (!activeTab) return;
+  const id = activeTab.id;
+  if (id === 'tab-progress') renderWorkerProgress();
+  else if (id === 'tab-weekly') renderWeeklyOutput(currentWeekOffset);
+  else if (id === 'tab-reports') renderReportsList();
+  else if (id === 'tab-users') renderUsers();
+}
+
+// ── Data accessors ──
+function getUsers() { return _users; }
+function getReports() { return _reports; }
+function getScriptUrl() { return _scriptUrl; }
+function getLearnedSkills(username) { return _skills[username] || []; }
+
+function getCatalog() {
+  return _catalog ? JSON.parse(JSON.stringify(_catalog)) : JSON.parse(JSON.stringify(DEFAULT_CATALOG));
+}
+
+async function saveCatalogAsync(cat) {
+  _catalog = cat;
+  await db.doc('config/catalog').set(cat);
+}
+
+async function saveLearnedSkills(username, skills) {
+  _skills[username] = skills;
+  await db.doc('skills/' + username).set({ list: skills });
+}
+
+const ADMIN_USER = 'manager';
+const ADMIN_PASS = 'haply2024!';
+const MANAGER_SECRET_KEY = 'mgr'; = 'manager';
+const ADMIN_PASS = 'haply2024!';
+const MANAGER_SECRET_KEY = 'mgr'; // URL hash trigger: yourfile.html#mgr
+
+// ── Catalog Storage (replaces static ASSEMBLIES / TASKS) ──
+const DEFAULT_CATALOG = {
+  products: [
+    { name: 'Inverse3', special: false },
+    { name: 'Minverse', special: false },
+    { name: 'VGS', special: false },
+    { name: 'Plateau Weighted Base', special: false },
+    { name: 'Arca-Swiss Desk Clamp', special: false },
+    { name: 'Inverse3X', special: true },
+  ],
+  assemblies: {
+    'Inverse3': ['Head Assembly','Base Assembly','Motor Assembly','Arm Assembly','Gimbal Assembly','Final Assembly'],
+    'Minverse': ['Head Assembly','Base Assembly','Motor Assembly','Arm Assembly','Gimbal Assembly','Final Assembly'],
+    'VGS': ['Head Assembly','Base Assembly','Motor Assembly','Arm Assembly','Gimbal Assembly','Final Assembly'],
+    'Plateau Weighted Base': ['Head Assembly','Base Assembly','Motor Assembly','Arm Assembly','Gimbal Assembly','Final Assembly'],
+    'Arca-Swiss Desk Clamp': ['Head Assembly','Base Assembly','Motor Assembly','Arm Assembly','Gimbal Assembly','Final Assembly'],
+    'Inverse3X': ['Head Assembly','Base Assembly','Motor Assembly','Arm Assembly','Gimbal Assembly','Final Assembly'],
+  },
+  tasks: {
+    'Head Assembly': ['Shell Prepp (Head)','C3+Shaft Glueing','C2 Bearing Glueing','Motor Mounting','Head Winding','Head Faceplate Prepp'],
+    'Base Assembly': ['Base Shell Prepp','PCB Installation','Wiring Harness','Base Cover Assembly','Base QC Check'],
+    'Motor Assembly': ['Motor Winding','Rotor Placement','Stator Fitting','Motor Housing Seal','Motor Testing'],
+    'Arm Assembly': ['Arm Shell Prepp','Joint Bearing Fit','Link Rod Assembly','Arm Wiring','Arm QC Check'],
+    'Gimbal Assembly': ['Gimbal Frame Prepp','Encoder Mounting','Gimbal Wiring','Calibration','Gimbal QC'],
+    'Final Assembly': ['Full Unit Assembly','Cable Management','Firmware Flash','Functional Test','Packaging Prep'],
+  }
+};
+
+// getCatalog and saveCatalog replaced by Firebase versions above
+
+// Dynamic getters (replaces static ASSEMBLIES / TASKS objects)
+function getAssembliesFor(productName) {
+  const cat = getCatalog();
+  return cat.assemblies[productName] || [];
+}
+function getTasksFor(assemblyName) {
+  const cat = getCatalog();
+  return cat.tasks[assemblyName] || [];
+}
+
+
+
+let currentUser = null;
+let selectedProduct = '';
+let selectedAssembly = '';
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showLogin() { showScreen('login-screen'); }
+function showRegister() { showScreen('register-screen'); }
+function showManagerLogin() { showScreen('manager-screen'); document.getElementById('mgr-user').value=''; document.getElementById('mgr-pass').value=''; document.getElementById('mgr-error').style.display='none'; }
+
+function doManagerLogin() {
+  const u = document.getElementById('mgr-user').value.trim();
+  const p = document.getElementById('mgr-pass').value;
+  const err = document.getElementById('mgr-error');
+  err.style.display = 'none';
+
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    currentUser = { username: ADMIN_USER, name: 'Manager', isAdmin: true };
+    enterApp();
+  } else {
+    err.textContent = 'Invalid manager credentials.';
+    err.style.display = 'block';
+  }
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  document.getElementById('login-error').style.display = 'none';
+
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    currentUser = { username: ADMIN_USER, name: 'Admin', isAdmin: true };
+    enterApp();
+    return;
+  }
+
+  const users = getUsers();
+  const found = users.find(x => x.username === u && x.password === p);
+  if (found) {
+    currentUser = { ...found, isAdmin: false };
+    enterApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function doRegister() {
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const u = document.getElementById('reg-user').value.trim();
+  const p = document.getElementById('reg-pass').value;
+  const err = document.getElementById('reg-error');
+  err.style.display = 'none';
+
+  if (!name || !u || !p) { err.textContent = 'Please fill all fields.'; err.style.display = 'block'; return; }
+  if (u === ADMIN_USER) { err.textContent = 'Username not available.'; err.style.display = 'block'; return; }
+
+  if (_users.find(x => x.username === u)) { err.textContent = 'Username already exists.'; err.style.display = 'block'; return; }
+
+  try {
+    const userData = { username: u, name, email: email || '', password: p };
+    await db.doc('users/' + u).set(userData);
+    showToast('Account created! Please sign in.');
+    showLogin();
+  } catch(e) {
+    err.textContent = 'Error creating account. Try again.'; err.style.display = 'block';
+  }
+}
+
+function enterApp() {
+  showScreen('app-screen');
+  document.getElementById('user-display').textContent = currentUser.name || currentUser.username;
+  document.getElementById('user-avatar').textContent = (currentUser.name || currentUser.username)[0].toUpperCase();
+  document.getElementById('home-welcome').textContent = currentUser.name || currentUser.username;
+  document.getElementById('admin-menu-card').style.display = currentUser.isAdmin ? 'flex' : 'none';
+  applyLang();
+  goTo('page-home');
+}
+
+function doLogout() {
+  currentUser = null;
+  showLogin();
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+}
+
+function goTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
+  if (page === 'page-admin') renderAdmin();
+  if (page === 'page-profile') renderProfile();
+  if (page === 'page-report') renderProductGrid();
+  window.scrollTo(0, 0);
+}
+
+function selectProduct(name) {
+  selectedProduct = name;
+  selectedAssembly = '';
+  document.getElementById('assembly-title').textContent = name;
+  const list = document.getElementById('assembly-list');
+  const assemblies = getAssembliesFor(name);
+  list.innerHTML = assemblies.length
+    ? assemblies.map(a =>
+        `<div class="assembly-item" onclick="selectAssembly('${a.replace(/'/g,"\\'")}')">
+          <span class="assembly-name">${a}</span>
+          <span style="color:var(--muted)">›</span>
+        </div>`
+      ).join('')
+    : `<div class="empty-state">${T('noAssemblies')}</div>`;
+  goTo('page-assembly');
+}
+
+function selectAssembly(name) {
+  selectedAssembly = name;
+  const tasks = getTasksFor(name);
+
+  document.getElementById('form-product-tag').textContent = selectedProduct;
+  document.getElementById('form-assembly-tag').textContent = selectedAssembly;
+  reportDate = null;
+  const dateEl = document.getElementById('form-date');
+  dateEl.textContent = formatDate(new Date());
+  dateEl.style.color = '';
+  const bdBtn = document.getElementById('backdate-btn');
+  bdBtn.style.borderColor = 'rgba(255,255,255,0.15)';
+  bdBtn.style.color = 'var(--muted)';
+  bdBtn.style.background = 'none';
+  bdBtn.innerHTML = '<span>📅</span> Backdate';
+  document.getElementById('backdate-picker').style.display = 'none';
+  document.getElementById('report-notes').value = '';
+  document.getElementById('submit-status').style.display = 'none';
+
+  const tbody = document.getElementById('tasks-body');
+  tbody.innerHTML = tasks.map(t =>
+    `<tr>
+      <td class="task-name">${t}</td>
+      <td style="text-align:center;">
+        <input type="number" class="qty-input" data-task="${t}" min="0" value="" placeholder="0">
+      </td>
+    </tr>`
+  ).join('');
+
+  // Show learned skills section only for Head Assembly
+  const skillsSection = document.getElementById('learned-skills-section');
+  if (name === 'Head Assembly') {
+    skillsSection.style.display = 'block';
+    const headTasks = getTasksFor('Head Assembly');
+    const userSkills = getLearnedSkills(currentUser.username);
+    document.getElementById('skills-checkboxes').innerHTML = headTasks.map(t => `
+      <div class="skill-check-item ${userSkills.includes(t) ? 'checked' : ''}" onclick="toggleSkill(this, '${t.replace(/'/g,"\\'")}')">
+        <div class="skill-checkbox-box"><span class="skill-checkbox-check">✓</span></div>
+        <span class="skill-check-label">${t}</span>
+      </div>
+    `).join('');
+  } else {
+    skillsSection.style.display = 'none';
+  }
+
+  goTo('page-form');
+}
+
+async function submitReport() {
+  const btn = document.getElementById('submit-btn');
+  const status = document.getElementById('submit-status');
+  btn.disabled = true;
+  btn.textContent = 'Sending...';
+
+  const tasks = [];
+  document.querySelectorAll('.qty-input').forEach(inp => {
+    tasks.push({ name: inp.dataset.task, qty: inp.value || '0' });
+  });
+
+  const payload = {
+    date: getReportDate(),
+    worker: currentUser.name || currentUser.username,
+    product: selectedProduct,
+    assembly: selectedAssembly,
+    tasks,
+    notes: document.getElementById('report-notes').value
+  };
+
+  let sentOk = false;
+  const scriptUrl = getScriptUrl();
+
+  if (scriptUrl) {
+    try {
+      await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: JSON.stringify(payload)
+      });
+      sentOk = true;
+    } catch(e) {
+      console.log('Sheets send failed:', e);
+    }
+  }
+
+  try {
+    await db.collection('reports').add({
+      ...payload,
+      timestamp: new Date().toISOString(),
+      sent: sentOk
+    });
+  } catch(e) {
+    console.error('Firestore report save error:', e);
+    showToast('⚠ Could not save report. Check connection.');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Upload Report →';
+  status.style.display = 'block';
+  status.textContent = sentOk ? '✓ Sending you back...' : '✓ Saved. Redirecting...';
+  status.style.color = sentOk ? 'var(--green)' : 'var(--muted)';
+
+  if (sentOk) {
+    showToast('✓ Report sent to Google Sheets!');
+  } else if (scriptUrl) {
+    showToast('⚠ Saved locally. Check Sheets connection.');
+  } else {
+    showToast('✓ Report saved successfully!');
+  }
+
+  // Auto-redirect to Products page after 1.2s
+  setTimeout(() => {
+    goTo('page-report');
+  }, 1200);
+}
+
+// ── Dynamic Product Grid ──
+function renderProductGrid() {
+  const container = document.getElementById('product-grid-dynamic');
+  if (!container) return;
+  const cat = getCatalog();
+  const regular = cat.products.filter(p => !p.special);
+  const special = cat.products.filter(p => p.special);
+
+  let html = '';
+  if (regular.length) {
+    html += `<div class="section-label">${T('products')}</div>
+    <div class="product-grid">
+      ${regular.map(p => `
+        <div class="product-card" onclick="selectProduct('${p.name.replace(/'/g,"\\'")}')">
+          <div class="product-name">${p.name}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+  if (special.length) {
+    html += `<div class="section-label">${T('specialProducts')}</div>
+    <div class="product-grid">
+      ${special.map(p => `
+        <div class="product-card special" onclick="selectProduct('${p.name.replace(/'/g,"\\'")}')">
+          <div class="product-name">${p.name}</div>
+          <div class="product-badge">${T('special')}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+  if (!cat.products.length) {
+    html = `<div class="empty-state">${T('noProducts')}</div>`;
+  }
+  container.innerHTML = html;
+}
+
+// ── Catalog Editor ──
+function renderCatalogEditor() {
+  const container = document.getElementById('catalog-editor');
+  if (!container) return;
+  const cat = getCatalog();
+
+  let html = `<div class="catalog-section-label">
+    <span>Products (${cat.products.length})</span>
+  </div>`;
+
+  cat.products.forEach((prod, pi) => {
+    const assemblies = cat.assemblies[prod.name] || [];
+    html += `
+    <div class="catalog-product-block" id="cpb-${pi}">
+      <div class="catalog-product-header" onclick="toggleCatalogProduct(${pi})">
+        <div class="catalog-product-icon">${prod.special ? '⭐' : '📦'}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="catalog-product-name" style="display:flex;align-items:center;gap:0.4rem;">
+            <span class="ce-name" id="ce-product-${pi}" contenteditable="false" spellcheck="false"
+              data-type="product" data-pi="${pi}" data-ai="-1" data-asm="" data-ti="-1"
+              onclick="event.stopPropagation()"
+            >${prod.name}</span>
+            ${prod.special ? '<span class="catalog-special-badge">Special</span>' : ''}
+            <button class="btn-ce-confirm" id="confirm-product-${pi}" onclick="event.stopPropagation();confirmCeRename('ce-product-${pi}')" title="Confirm rename">✓</button>
+          </div>
+          <div class="catalog-product-meta">${assemblies.length} assemblies</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;align-items:center;">
+          <button class="btn-catalog-settings cgm-trigger" data-type="product" data-pi="${pi}" data-ai="-1" data-asm="" data-ti="-1" data-target="ce-product-${pi}" data-confirm="confirm-product-${pi}" title="Options">⚙</button>
+          <div class="catalog-chevron" id="chev-${pi}">›</div>
+        </div>
+      </div>
+      <div class="catalog-product-body" id="cpbody-${pi}">
+        ${assemblies.map((asm, ai) => {
+          const tasks = cat.tasks[asm] || [];
+          const asmEsc = asm.replace(/"/g, '&quot;');
+          const ceId = `ce-asm-${pi}-${ai}`;
+          const confirmId = `confirm-asm-${pi}-${ai}`;
+          return `
+          <div class="catalog-assembly-row">
+            <div class="catalog-assembly-header" onclick="toggleCatalogAssembly(${pi},${ai})">
+              <div class="catalog-assembly-dot"></div>
+              <span class="ce-name" id="${ceId}" contenteditable="false" spellcheck="false"
+                style="flex:1;font-size:0.83rem;font-weight:600;"
+                data-type="assembly" data-pi="${pi}" data-ai="${ai}" data-asm="${asmEsc}" data-ti="-1"
+                onclick="event.stopPropagation()"
+              >${asm}</span>
+              <button class="btn-ce-confirm" id="${confirmId}" onclick="event.stopPropagation();confirmCeRename('${ceId}')" title="Confirm rename">✓</button>
+              <div class="catalog-assembly-count" style="margin-left:0.25rem;">${tasks.length} tasks</div>
+              <button class="btn-catalog-settings cgm-trigger" style="width:24px;height:24px;font-size:0.8rem;margin-left:0.4rem;" data-type="assembly" data-pi="${pi}" data-ai="${ai}" data-asm="${asmEsc}" data-ti="-1" data-target="${ceId}" data-confirm="${confirmId}" title="Options">⚙</button>
+              <div class="catalog-chevron" id="achev-${pi}-${ai}" style="margin-left:0.25rem;font-size:0.85rem;">›</div>
+            </div>
+            <div class="catalog-assembly-body" id="asmBody-${pi}-${ai}">
+              ${tasks.map((t, ti) => {
+                const taskCeId = `ce-task-${pi}-${ai}-${ti}`;
+                const taskConfirmId = `confirm-task-${pi}-${ai}-${ti}`;
+                return `
+                <div class="catalog-task-row">
+                  <span class="ce-name" id="${taskCeId}" contenteditable="false" spellcheck="false"
+                    style="flex:1;"
+                    data-type="task" data-pi="${pi}" data-ai="${ai}" data-asm="${asmEsc}" data-ti="${ti}"
+                  >· ${t}</span>
+                  <button class="btn-ce-confirm" id="${taskConfirmId}" onclick="confirmCeRename('${taskCeId}')" title="Confirm rename">✓</button>
+                  <button class="btn-remove-task cgm-trigger" style="font-size:0.8rem;padding:0.2rem 0.5rem;" data-type="task" data-pi="${pi}" data-ai="${ai}" data-asm="${asmEsc}" data-ti="${ti}" data-target="${taskCeId}" data-confirm="${taskConfirmId}" title="Options">⚙</button>
+                </div>`;
+              }).join('')}
+              <div class="catalog-add-row">
+                <input class="catalog-add-input" id="newtask-${pi}-${ai}" placeholder="New task name…" onkeydown="if(event.key==='Enter')addTask('${asm.replace(/'/g,"\\'")}',${pi},${ai})">
+                <button class="btn-catalog-add" onclick="addTask('${asm.replace(/'/g,"\\'")}',${pi},${ai})">+ Add</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+
+        <div style="margin-top:0.75rem;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase;margin-bottom:0.5rem;">Add Assembly</div>
+          <div class="catalog-add-row">
+            <input class="catalog-add-input" id="newasm-${pi}" placeholder="Assembly name (e.g. Head Assembly)…" onkeydown="if(event.key==='Enter')addAssemblyToProduct(${pi})">
+            <button class="btn-catalog-add" onclick="addAssemblyToProduct(${pi})">+ Add</button>
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;">If the assembly already exists in another product, its tasks will be shared.</div>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // Add new product form
+  html += `
+  <div class="catalog-add-product-box">
+    <div style="font-size:10px;font-weight:700;letter-spacing:0.15em;color:var(--accent);text-transform:uppercase;margin-bottom:0.75rem;">Add New Product</div>
+    <div class="catalog-add-row" style="flex-wrap:wrap;gap:0.5rem;">
+      <input class="catalog-add-input" id="newprod-name" placeholder="Product name…" onkeydown="if(event.key==='Enter')addProduct()">
+      <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--muted);cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" id="newprod-special" style="accent-color:var(--accent2);width:14px;height:14px;"> Special
+      </label>
+      <button class="btn-catalog-add" onclick="addProduct()">+ Add Product</button>
+    </div>
+  </div>
+  <div style="margin-top:1rem;padding:0.75rem 1rem;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:8px;font-size:0.75rem;color:var(--amber);">
+    ⚠ Changes take effect immediately. Workers will see updated products and tasks on their next report.
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function toggleCatalogProduct(pi) {
+  const body = document.getElementById('cpbody-' + pi);
+  const header = document.getElementById('cpb-' + pi).querySelector('.catalog-product-header');
+  const chev = document.getElementById('chev-' + pi);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  header.classList.toggle('open', !isOpen);
+  chev.classList.toggle('open', !isOpen);
+}
+
+function toggleCatalogAssembly(pi, ai) {
+  const body = document.getElementById('asmBody-' + pi + '-' + ai);
+  const chev = document.getElementById('achev-' + pi + '-' + ai);
+  body.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+// ── Catalog Global Context Menu ──
+let _cgmCtx = null;
+
+document.addEventListener('click', function(e) {
+  const menu = document.getElementById('catalog-global-menu');
+
+  // If clicking inside the dropdown menu or delete modal, let it fire normally
+  if (menu && menu.contains(e.target)) return;
+  if (e.target.closest('#delete-modal')) return;
+
+  // If clicking a lang switcher (or child SVG/span inside it), let it fire normally
+  if (e.target.closest('.lang-switcher')) return;
+
+  const trigger = e.target.closest('.cgm-trigger');
+  if (trigger) {
+    e.stopPropagation();
+    _cgmCtx = {
+      type:      trigger.dataset.type,
+      pi:        parseInt(trigger.dataset.pi),
+      ai:        parseInt(trigger.dataset.ai),
+      asmName:   trigger.dataset.asm,
+      ti:        parseInt(trigger.dataset.ti),
+      targetId:  trigger.dataset.target,
+      confirmId: trigger.dataset.confirm
+    };
+    const delBtn = document.getElementById('cgm-delete-btn');
+    if (delBtn) delBtn.textContent = _cgmCtx.type === 'assembly' ? '🗑 Remove' : '🗑 Delete';
+    const rect = trigger.getBoundingClientRect();
+    let left = rect.right - 150;
+    if (left < 8) left = 8;
+    let top = rect.bottom + 6;
+    if (top + 90 > window.innerHeight) top = rect.top - 90;
+    menu.style.left = left + 'px';
+    menu.style.top  = top  + 'px';
+    menu.style.display = 'block';
+    return;
+  }
+
+  // Click outside menu → close
+  if (menu) menu.style.display = 'none';
+
+}, true); // capture phase so it fires before inline onclick on parent headers
+
+function catalogMenuAction(action) {
+  const menu = document.getElementById('catalog-global-menu');
+  menu.style.display = 'none';
+  const ctx = _cgmCtx;
+  if (!ctx) return;
+
+  if (action === 'rename') {
+    _cgmCtx = null;
+    const el = document.getElementById(ctx.targetId);
+    const confirmBtn = document.getElementById(ctx.confirmId);
+    if (!el) return;
+    el.dataset.original = el.textContent;
+    el.setAttribute('contenteditable', 'true');
+    el.classList.add('ce-editing');
+    el.focus();
+    // Select all
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    // Show confirm tick
+    if (confirmBtn) confirmBtn.classList.add('visible');
+  } else {
+    _cgmCtx = null;
+    if      (ctx.type === 'product')  confirmDeleteProduct(ctx.pi);
+    else if (ctx.type === 'assembly') confirmRemoveAssembly(ctx.pi, ctx.ai);
+    else if (ctx.type === 'task')     confirmRemoveTask(ctx.asmName, ctx.ti);
+  }
+}
+
+// Enter key → confirm save
+document.addEventListener('keydown', function(e) {
+  if (e.target.classList.contains('ce-name') && e.key === 'Enter') {
+    e.preventDefault();
+    // Find the confirm button for this element and click it
+    const confirmId = 'confirm-' + e.target.id.replace('ce-', '');
+    const btn = document.getElementById(confirmId);
+    if (btn) btn.click();
+    else confirmCeRename(e.target.id);
+  }
+  if (e.target.classList.contains('ce-name') && e.key === 'Escape') {
+    cancelCeRename(e.target);
+  }
+});
+
+// Blur → CANCEL (restore original), do NOT save
+document.addEventListener('blur', function(e) {
+  const el = e.target;
+  if (!el.classList.contains('ce-name') || !el.classList.contains('ce-editing')) return;
+  // Small delay to allow confirm button click to fire first
+  setTimeout(() => {
+    if (el.classList.contains('ce-editing')) {
+      cancelCeRename(el);
+    }
+  }, 150);
+}, true);
+
+function cancelCeRename(el) {
+  if (el.dataset.original !== undefined) {
+    el.textContent = el.dataset.original;
+    delete el.dataset.original;
+  }
+  el.classList.remove('ce-editing');
+  el.setAttribute('contenteditable', 'false');
+  el.style.pointerEvents = '';
+  const confirmId = el.id.replace('ce-', 'confirm-');
+  const btn = document.getElementById(confirmId);
+  if (btn) btn.classList.remove('visible');
+}
+
+function confirmCeRename(ceId) {
+  const el = document.getElementById(ceId);
+  if (!el || !el.classList.contains('ce-editing')) return;
+  el.classList.remove('ce-editing');
+  el.setAttribute('contenteditable', 'false');
+  el.style.pointerEvents = '';
+  const confirmId = ceId.replace('ce-', 'confirm-');
+  const btn = document.getElementById(confirmId);
+  if (btn) btn.classList.remove('visible');
+  delete el.dataset.original;
+
+  const type = el.dataset.type;
+  const pi   = parseInt(el.dataset.pi);
+  const ai   = parseInt(el.dataset.ai);
+  const ti   = parseInt(el.dataset.ti);
+  const asm  = el.dataset.asm;
+  let newName = el.textContent.replace(/^·\s*/, '').trim();
+  if (!newName) { renderCatalogEditor(); return; }
+  if      (type === 'product')  renameProduct(pi, newName);
+  else if (type === 'assembly') renameAssembly(pi, ai, newName);
+  else if (type === 'task')     renameTask(asm, ti, newName);
+}
+
+// ── Delete modal ──
+let _deleteCallback = null;
+
+function showDeleteModal(title, msg, onConfirm) {
+  _deleteCallback = onConfirm;
+  document.getElementById('delete-modal-title').textContent = title;
+  document.getElementById('delete-modal-msg').textContent = msg;
+  const btn = document.getElementById('delete-modal-confirm');
+  btn.textContent = title.startsWith('Remove') ? 'Remove' : 'Delete';
+  const modal = document.getElementById('delete-modal');
+  modal.style.display = 'flex';
+}
+
+function closeDeleteModal() {
+  document.getElementById('delete-modal').style.display = 'none';
+  _deleteCallback = null;
+}
+
+function executeDelete() {
+  const cb = _deleteCallback;
+  closeDeleteModal();
+  if (cb) cb();
+}
+
+// Close on backdrop click
+document.getElementById('delete-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeDeleteModal();
+});
+
+function confirmDeleteProduct(pi) {
+  const cat = getCatalog();
+  const prod = cat.products[pi];
+  showDeleteModal('Delete product?', '"' + prod.name + '" will be permanently removed.', () => deleteProduct(pi));
+}
+
+function confirmRemoveAssembly(pi, ai) {
+  const cat = getCatalog();
+  const prod = cat.products[pi];
+  const asm = (cat.assemblies[prod.name] || [])[ai];
+  showDeleteModal('Remove assembly?', '"' + asm + '" will be removed from ' + prod.name + '.', () => removeAssemblyFromProduct(pi, ai));
+}
+
+function confirmRemoveTask(asmName, ti) {
+  const cat = getCatalog();
+  const task = (cat.tasks[asmName] || [])[ti];
+  showDeleteModal('Delete task?', '"' + task + '" will be permanently deleted.', () => removeTask(asmName, ti));
+}
+
+async function renameProduct(pi, newName) {
+  newName = newName.trim();
+  const cat = getCatalog();
+  const prod = cat.products[pi];
+  if (!newName || newName === prod.name) return;
+  if (cat.products.find((p, i) => i !== pi && p.name.toLowerCase() === newName.toLowerCase())) {
+    showToast('A product with that name already exists.'); renderCatalogEditor(); return;
+  }
+  // Migrate assemblies key
+  const asms = cat.assemblies[prod.name] || [];
+  delete cat.assemblies[prod.name];
+  cat.assemblies[newName] = asms;
+  prod.name = newName;
+  saveCatalogAsync(cat);
+  renderCatalogEditor();
+  renderProductGrid();
+  showToast('✓ Renamed to "' + newName + '"');
+}
+
+async function renameAssembly(pi, ai, newName) {
+  newName = newName.trim();
+  const cat = getCatalog();
+  const prodName = cat.products[pi].name;
+  const oldName = (cat.assemblies[prodName] || [])[ai];
+  if (!newName || newName === oldName) return;
+  // Rename in all products that reference this assembly
+  Object.keys(cat.assemblies).forEach(p => {
+    const idx = cat.assemblies[p].indexOf(oldName);
+    if (idx !== -1) cat.assemblies[p][idx] = newName;
+  });
+  // Migrate tasks key
+  if (cat.tasks[oldName]) {
+    cat.tasks[newName] = cat.tasks[oldName];
+    delete cat.tasks[oldName];
+  }
+  saveCatalogAsync(cat);
+  renderCatalogEditor();
+  showToast('✓ Assembly renamed to "' + newName + '"');
+}
+
+async function renameTask(asmName, ti, newName) {
+  newName = newName.trim();
+  const cat = getCatalog();
+  if (!cat.tasks[asmName]) return;
+  const oldName = cat.tasks[asmName][ti];
+  if (!newName || newName === oldName) return;
+  cat.tasks[asmName][ti] = newName;
+  saveCatalogAsync(cat);
+  showToast('✓ Task renamed.');
+}
+
+async function addProduct() {
+  const nameEl = document.getElementById('newprod-name');
+  const name = nameEl.value.trim();
+  const special = document.getElementById('newprod-special').checked;
+  if (!name) { showToast('Enter a product name.'); return; }
+  const cat = getCatalog();
+  if (cat.products.find(p => p.name.toLowerCase() === name.toLowerCase())) {
+    showToast('Product already exists.'); return;
+  }
+  cat.products.push({ name, special });
+  if (!cat.assemblies[name]) cat.assemblies[name] = [];
+  saveCatalogAsync(cat);
+  nameEl.value = '';
+  document.getElementById('newprod-special').checked = false;
+  renderCatalogEditor();
+  renderProductGrid();
+  showToast('✓ Product "' + name + '" added!');
+}
+
+function getOpenStates() {
+  const openProds = [], openAsms = [];
+  document.querySelectorAll('[id^="cpbody-"]').forEach(el => {
+    if (el.classList.contains('open')) openProds.push(el.id.replace('cpbody-', ''));
+  });
+  document.querySelectorAll('[id^="asmBody-"]').forEach(el => {
+    if (el.classList.contains('open')) openAsms.push(el.id.replace('asmBody-', ''));
+  });
+  return { openProds, openAsms, scrollY: window.scrollY };
+}
+
+function restoreOpenStates({ openProds, openAsms, scrollY }) {
+  openProds.forEach(pi => {
+    const body   = document.getElementById('cpbody-' + pi);
+    const header = document.getElementById('cpb-' + pi)?.querySelector('.catalog-product-header');
+    const chev   = document.getElementById('chev-' + pi);
+    if (body) { body.classList.add('open'); header?.classList.add('open'); chev?.classList.add('open'); }
+  });
+  openAsms.forEach(key => {
+    const asmBody = document.getElementById('asmBody-' + key);
+    const asmChev = document.getElementById('achev-' + key);
+    if (asmBody) { asmBody.classList.add('open'); asmChev?.classList.add('open'); }
+  });
+  if (scrollY !== undefined) window.scrollTo({ top: scrollY, behavior: 'instant' });
+}
+
+async function deleteProduct(pi) {
+  const cat = getCatalog();
+  const prod = cat.products[pi];
+  delete cat.assemblies[prod.name];
+  cat.products.splice(pi, 1);
+  saveCatalogAsync(cat);
+  const states = getOpenStates();
+  renderCatalogEditor();
+  renderProductGrid();
+  setTimeout(() => restoreOpenStates(states), 10);
+  showToast('✓ Product deleted.');
+}
+
+async function addAssemblyToProduct(pi) {
+  const input = document.getElementById('newasm-' + pi);
+  const asm = input.value.trim();
+  if (!asm) { showToast('Enter an assembly name.'); return; }
+  const cat = getCatalog();
+  const prod = cat.products[pi];
+  if (!cat.assemblies[prod.name]) cat.assemblies[prod.name] = [];
+  if (cat.assemblies[prod.name].includes(asm)) { showToast('Assembly already exists on this product.'); return; }
+  cat.assemblies[prod.name].push(asm);
+  if (!cat.tasks[asm]) cat.tasks[asm] = [];
+  saveCatalogAsync(cat);
+  input.value = '';
+  renderCatalogEditor();
+  setTimeout(() => {
+    const body = document.getElementById('cpbody-' + pi);
+    const header = document.getElementById('cpb-' + pi)?.querySelector('.catalog-product-header');
+    const chev = document.getElementById('chev-' + pi);
+    if (body) { body.classList.add('open'); header?.classList.add('open'); chev?.classList.add('open'); }
+  }, 10);
+  showToast('✓ Assembly added!');
+}
+
+async function removeAssemblyFromProduct(pi, ai) {
+  const cat = getCatalog();
+  const prod = cat.products[pi];
+  const asm = (cat.assemblies[prod.name] || [])[ai];
+  if (!asm) return;
+  cat.assemblies[prod.name].splice(ai, 1);
+  saveCatalogAsync(cat);
+  const states = getOpenStates();
+  if (!states.openProds.includes(String(pi))) states.openProds.push(String(pi));
+  renderCatalogEditor();
+  renderProductGrid();
+  setTimeout(() => restoreOpenStates(states), 10);
+  showToast('✓ Assembly removed.');
+}
+
+async function addTask(asmName, pi, ai) {
+  const input = document.getElementById('newtask-' + pi + '-' + ai);
+  const task = input.value.trim();
+  if (!task) { showToast('Enter a task name.'); return; }
+  const cat = getCatalog();
+  if (!cat.tasks[asmName]) cat.tasks[asmName] = [];
+  if (cat.tasks[asmName].includes(task)) { showToast('Task already exists.'); return; }
+  cat.tasks[asmName].push(task);
+  saveCatalogAsync(cat);
+  input.value = '';
+  renderCatalogEditor();
+  setTimeout(() => {
+    const body = document.getElementById('cpbody-' + pi);
+    const header = document.getElementById('cpb-' + pi)?.querySelector('.catalog-product-header');
+    const chev = document.getElementById('chev-' + pi);
+    const asmBody = document.getElementById('asmBody-' + pi + '-' + ai);
+    const asmChev = document.getElementById('achev-' + pi + '-' + ai);
+    if (body) { body.classList.add('open'); header?.classList.add('open'); chev?.classList.add('open'); }
+    if (asmBody) { asmBody.classList.add('open'); asmChev?.classList.add('open'); }
+  }, 10);
+  showToast('✓ Task added!');
+}
+
+async function removeTask(asmName, ti) {
+  const cat = getCatalog();
+  if (!cat.tasks[asmName]) return;
+  cat.tasks[asmName].splice(ti, 1);
+  saveCatalogAsync(cat);
+
+  const states = getOpenStates();
+
+  // Also ensure the parent product+assembly of this task stays open
+  cat.products.forEach((prod, pi) => {
+    const asms = cat.assemblies[prod.name] || [];
+    asms.forEach((asm, ai) => {
+      if (asm === asmName) {
+        if (!states.openProds.includes(String(pi))) states.openProds.push(String(pi));
+        if (!states.openAsms.includes(pi + '-' + ai)) states.openAsms.push(pi + '-' + ai);
+      }
+    });
+  });
+
+  renderCatalogEditor();
+  setTimeout(() => restoreOpenStates(states), 10);
+  showToast('✓ Task deleted.');
+}
+
+function renderAdmin() {
+  renderWorkerProgress();
+  renderReportsList();
+  renderWeeklyOutput(currentWeekOffset);
+  renderUsers();
+  renderCatalogEditor();
+  const su = document.getElementById('script-url-input');
+  if (su) su.value = getScriptUrl();
+}
+
+// getLearnedSkills and saveLearnedSkills replaced by Firebase versions above
+async function toggleSkill(el, taskName) {
+  el.classList.toggle('checked');
+  const skills = getLearnedSkills(currentUser.username);
+  if (el.classList.contains('checked')) {
+    if (!skills.includes(taskName)) skills.push(taskName);
+  } else {
+    const idx = skills.indexOf(taskName);
+    if (idx > -1) skills.splice(idx, 1);
+  }
+  saveLearnedSkills(currentUser.username, skills);
+}
+
+// ── Backdate ──
+let reportDate = null; // null = today
+
+function toggleBackdatePicker() {
+  const picker = document.getElementById('backdate-picker');
+  const isHidden = picker.style.display === 'none' || picker.style.display === '';
+  picker.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    const input = document.getElementById('backdate-input');
+    input.max = formatDate(new Date());
+    input.value = reportDate || formatDate(new Date());
+  }
+}
+
+function applyBackdate(val) {
+  if (!val) return;
+  reportDate = val;
+  const dateEl = document.getElementById('form-date');
+  dateEl.textContent = val;
+  dateEl.style.color = 'var(--amber)';
+  dateEl.title = 'Backdated report';
+  // Update button to show active state
+  const btn = document.getElementById('backdate-btn');
+  btn.style.borderColor = 'rgba(245,158,11,0.5)';
+  btn.style.color = 'var(--amber)';
+  btn.style.background = 'rgba(245,158,11,0.08)';
+  btn.innerHTML = '<span>📅</span> ' + val;
+  document.getElementById('backdate-picker').style.display = 'none';
+}
+
+function clearBackdate() {
+  reportDate = null;
+  const today = formatDate(new Date());
+  const dateEl = document.getElementById('form-date');
+  dateEl.textContent = today;
+  dateEl.style.color = '';
+  const btn = document.getElementById('backdate-btn');
+  btn.style.borderColor = 'rgba(255,255,255,0.15)';
+  btn.style.color = 'var(--muted)';
+  btn.style.background = 'none';
+  btn.innerHTML = '<span>📅</span> Backdate';
+  document.getElementById('backdate-picker').style.display = 'none';
+}
+
+function getReportDate() {
+  return reportDate || formatDate(new Date());
+}
+let currentWeekOffset = 0;
+
+function getWeekBounds(offset) {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+  monday.setHours(0,0,0,0);
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+  friday.setHours(23,59,59,999);
+  return { monday, friday };
+}
+
+function formatDate(d) {
+  // Always returns YYYY-MM-DD regardless of locale
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dy = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dy;
+}
+function fmtDisplay(d) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function getWeekDays(monday) {
+  const days = [];
+  const labels = ['Mon','Tue','Wed','Thu','Fri'];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push({ label: labels[i] + ' ' + fmtDisplay(d), date: formatDate(d) });
+  }
+  return days;
+}
+
+function renderWeeklyOutput(offset) {
+  currentWeekOffset = offset;
+  const { monday, friday } = getWeekBounds(offset);
+  const days = getWeekDays(monday);
+  const reports = getReports();
+  const users = getUsers();
+  const headTasks = getTasksFor('Head Assembly');
+  const container = document.getElementById('weekly-output');
+
+  const weekLabel = `${fmtDisplay(monday)} – ${fmtDisplay(friday)}`;
+
+  let html = `
+    <div class="weekly-nav">
+      <button onclick="renderWeeklyOutput(${offset - 1})">${T('prev')}</button>
+      <div class="week-range">${T('weekOf')} ${weekLabel}</div>
+      <button onclick="renderWeeklyOutput(${offset + 1})">${T('next')}</button>
+    </div>`;
+
+  if (users.length === 0) {
+    html += `<div class="empty-state">${T('noWorkers')}</div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  users.forEach(u => {
+    const workerName = u.name || u.username;
+    const initials = workerName.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2);
+
+    const weekReports = reports.filter(r => {
+      return r.worker === workerName
+        && r.assembly === 'Head Assembly'
+        && r.date >= formatDate(monday)
+        && r.date <= formatDate(friday);
+    });
+
+    const matrix = {};
+    headTasks.forEach(t => { matrix[t] = {}; days.forEach(d => { matrix[t][d.date] = 0; }); });
+
+    weekReports.forEach(r => {
+      (r.tasks || []).forEach(task => {
+        if (matrix[task.name] && matrix[task.name][r.date] !== undefined) {
+          matrix[task.name][r.date] += parseInt(task.qty) || 0;
+        }
+      });
+    });
+
+    const rowTotals = {};
+    headTasks.forEach(t => { rowTotals[t] = days.reduce((s,d) => s + (matrix[t][d.date]||0), 0); });
+    const dayTotals = {};
+    days.forEach(d => { dayTotals[d.date] = headTasks.reduce((s,t) => s + (matrix[t][d.date]||0), 0); });
+    const grandTotal = Object.values(rowTotals).reduce((a,b)=>a+b,0);
+
+    html += `
+    <div class="weekly-worker-block">
+      <div class="weekly-worker-name">
+        <div class="worker-avatar" style="width:30px;height:30px;font-size:12px;">${initials}</div>
+        ${workerName} <span style="font-size:0.7rem;color:var(--muted);font-weight:400;">— ${T('headAssembly')}</span>
+      </div>
+      <div style="overflow-x:auto;">
+      <table class="weekly-table">
+        <thead>
+          <tr>
+            <th>${T('taskOp')}</th>
+            ${days.map(d=>`<th>${d.label}</th>`).join('')}
+            <th style="color:var(--accent);">${T('total')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${headTasks.map(t => `
+            <tr>
+              <td>${t}</td>
+              ${days.map(d => {
+                const v = matrix[t][d.date];
+                return `<td class="${v===0?'cell-zero':''}">${v===0?'—':v}</td>`;
+              }).join('')}
+              <td style="color:${rowTotals[t]>0?'var(--text)':'var(--border2)'};">${rowTotals[t]||'—'}</td>
+            </tr>
+          `).join('')}
+          <tr>
+            <td style="color:var(--accent);font-weight:700;font-family:'Syne';">${T('total')}</td>
+            ${days.map(d=>`<td>${dayTotals[d.date]||'—'}</td>`).join('')}
+            <td>${grandTotal||'—'}</td>
+          </tr>
+        </tbody>
+      </table>
+      </div>
+    </div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+function renderWorkerProgress() {
+  const users = getUsers();
+  const reports = getReports();
+  const container = document.getElementById('workers-list');
+  const headTasks = getTasksFor('Head Assembly');
+  const totalHeadTasks = headTasks.length || 1;
+
+  if (users.length === 0) {
+    container.innerHTML = `<div class="empty-state">${T('noWorkers')}</div>`;
+    return;
+  }
+
+  container.innerHTML = users.map(u => {
+    const workerName = u.name || u.username;
+    const userReports = reports.filter(r => r.worker === workerName);
+    const total = userReports.length;
+    const sent = userReports.filter(r => r.sent).length;
+    const initials = workerName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+    const learnedSkills = getLearnedSkills(u.username);
+    const masteredCount = learnedSkills.length;
+    const masteryPct = Math.round((masteredCount / totalHeadTasks) * 100);
+
+    return `
+    <div class="worker-card">
+      <div class="worker-header">
+        <div class="worker-avatar">${initials}</div>
+        <div class="worker-info">
+          <div class="worker-name">${workerName}</div>
+          <div class="worker-role">@${u.username}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="worker-count">${total}</div>
+          <div class="worker-count-label">${T('reports')}</div>
+        </div>
+      </div>
+
+      <div class="skill-bar-section">
+        <div class="skill-bar-title">${T('headAssemblyMastery')} · ${masteredCount}/${totalHeadTasks} · ${masteryPct}%</div>
+        <div class="skill-master-bar-wrap">
+          <div class="skill-master-bar-fill" style="width:${masteryPct}%"></div>
+          <span class="skill-master-pct">${masteryPct}%</span>
+        </div>
+        <div style="margin-top:0.6rem; display:flex; flex-direction:column; gap:0.3rem;">
+          ${headTasks.map(t => {
+            const done = learnedSkills.includes(t);
+            return `<div style="display:flex;align-items:center;gap:0.5rem;">
+              <span style="width:16px;height:16px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;background:${done?'rgba(124,58,237,0.3)':'var(--surface2)'};color:${done?'#a78bfa':'var(--muted)'};border:1px solid ${done?'rgba(124,58,237,0.5)':'var(--border)'};">${done?'✓':'·'}</span>
+              <span style="font-size:0.78rem;color:${done?'#c4b5fd':'var(--muted)'};font-weight:${done?'600':'400'};">${t}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div class="progress-row" style="margin-top:1rem;">
+        <div class="progress-label"><span>${T('totalReports')}</span><span>${total}</span></div>
+        <div class="progress-bar"><div class="progress-fill blue" style="width:${Math.min(total*10,100)}%"></div></div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-label"><span>${T('sheetsUploads')}</span><span>${sent}/${total}</span></div>
+        <div class="progress-bar"><div class="progress-fill amber" style="width:${total>0?Math.round(sent/total*100):0}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderReportsList() {
+  const reports = getReports();
+  const container = document.getElementById('reports-list-admin');
+  if (reports.length === 0) {
+    container.innerHTML = `<div class="empty-state">${T('noReports')}</div>`;
+    return;
+  }
+  container.innerHTML = [...reports].reverse().map(r => `
+    <div class="report-row">
+      <div class="worker-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:white;flex-shrink:0;">${(r.worker||'?')[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="report-row-user">${r.worker}</div>
+        <div class="report-row-info">${r.product} · ${r.assembly}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="report-row-date">${r.date}</div>
+        <span class="badge ${r.sent?'sent':'pending'}">${r.sent?T('sent'):T('local')}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'tab-users') renderUsers();
+  if (id === 'tab-catalog') renderCatalogEditor();
+}
+
+async function saveScriptUrl() {
+  const url = document.getElementById('script-url-input').value.trim();
+  _scriptUrl = url;
+  try {
+    await db.doc('config/settings').set({ scriptUrl: url });
+    showToast('Script URL saved!');
+  } catch(e) {
+    showToast('⚠ Could not save URL.');
+  }
+}
+
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = msg;
+  t.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Profile / Settings ──
+function renderProfile() {
+  if (!currentUser) return;
+  const displayName = currentUser.name || currentUser.username;
+  const initials = displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+
+  document.getElementById('profile-avatar-big').textContent = initials;
+  document.getElementById('profile-name-display').textContent = displayName;
+  document.getElementById('profile-username-display').textContent = '@' + currentUser.username;
+  document.getElementById('profile-info-name').textContent = currentUser.name || '—';
+  document.getElementById('profile-info-user').textContent = currentUser.username;
+  document.getElementById('profile-info-email').textContent = currentUser.email || '—';
+  document.getElementById('profile-edit-name').value = currentUser.name || '';
+  document.getElementById('profile-edit-email').value = currentUser.email || '';
+  // Clear password fields
+  ['pass-current','pass-new','pass-confirm'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pass-error').style.display = 'none';
+}
+
+async function saveProfileInfo() {
+  const newName = document.getElementById('profile-edit-name').value.trim();
+  const newEmail = document.getElementById('profile-edit-email').value.trim();
+  if (!newName) { showToast('Name cannot be empty.'); return; }
+
+  if (!currentUser.isAdmin) {
+    try {
+      await db.doc('users/' + currentUser.username).set({
+        ...(_users.find(u => u.username === currentUser.username) || {}),
+        name: newName,
+        email: newEmail
+      });
+    } catch(e) { showToast('⚠ Could not save profile.'); return; }
+  }
+  currentUser.name = newName;
+  currentUser.email = newEmail;
+
+  // Update topbar
+  document.getElementById('user-display').textContent = currentUser.name;
+  document.getElementById('user-avatar').textContent = (currentUser.name)[0].toUpperCase();
+  document.getElementById('home-welcome').textContent = currentUser.name;
+  renderProfile();
+  showToast('✓ Profile updated!');
+}
+
+async function changePassword() {
+  const cur = document.getElementById('pass-current').value;
+  const nw = document.getElementById('pass-new').value;
+  const conf = document.getElementById('pass-confirm').value;
+  const err = document.getElementById('pass-error');
+  err.style.display = 'none';
+
+  if (currentUser.isAdmin) { err.textContent = 'Manager password must be changed in the source file.'; err.style.display = 'block'; return; }
+  if (!cur || !nw || !conf) { err.textContent = 'Please fill all password fields.'; err.style.display = 'block'; return; }
+
+  const users = getUsers();
+  const idx = users.findIndex(x => x.username === currentUser.username);
+  if (idx === -1) { err.textContent = 'User not found.'; err.style.display = 'block'; return; }
+  if (users[idx].password !== cur) { err.textContent = 'Current password is incorrect.'; err.style.display = 'block'; return; }
+  if (nw.length < 4) { err.textContent = 'New password must be at least 4 characters.'; err.style.display = 'block'; return; }
+  if (nw !== conf) { err.textContent = 'New passwords do not match.'; err.style.display = 'block'; return; }
+
+  try {
+    await db.doc('users/' + currentUser.username).set({ ...users[idx], password: nw });
+  } catch(e) { err.textContent = 'Could not update password.'; err.style.display = 'block'; return; }
+  currentUser.password = nw;
+  ['pass-current','pass-new','pass-confirm'].forEach(id => document.getElementById(id).value = '');
+  showToast('✓ Password updated!');
+}
+
+// ── Password eye toggle ──
+function togglePass(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
+// ── Language / i18n ──
+const TRANSLATIONS = {
+  en: {
+    // Login
+    loginSub: 'Daily Report System', loginUserLabel: 'Username', loginPassLabel: 'Password',
+    loginBtn: 'Sign In →', loginError: 'Invalid username or password.',
+    loginNoAccount: 'No account?', loginRegisterLink: 'Register here',
+    // App shell
+    logout: 'Logout',
+    // Home
+    homeGreeting: 'Good day,',
+    menuReport: 'Shop Floor Daily Report', menuReportDesc: 'Submit your daily production report',
+    menuAdmin: 'Admin Panel', menuAdminDesc: 'View team progress & all reports',
+    menuProfile: 'My Profile', menuProfileDesc: 'Settings, change password',
+    // Report pages
+    back: '← Back', selectProduct: 'Select Product', selectAssembly: 'Select Assembly',
+    dailyReport: 'Daily Report', uploadReport: 'Upload Report →', sending: 'Sending...',
+    taskOp: 'Task / Operation', qty: 'QTY',
+    skillsLabel: 'Skills Learned / Mastered',
+    skillsDesc: 'Select all tasks you have learned or mastered in this assembly:',
+    notes: 'Notes / Others', notesPlaceholder: 'Any additional notes, issues, or observations...',
+    backdateTitle: 'Select Report Date', backdateReset: 'Reset to Today',
+    backdateWarn: '⚠ Only use this if you forgot to submit on the actual work day.',
+    backdateBtn: 'Backdate', products: 'Products', specialProducts: 'Special Products',
+    noAssemblies: 'No assemblies configured for this product.',
+    noProducts: 'No products configured. Ask your manager to add products.',
+    // Admin panel
+    adminPanelTitle: 'Admin Panel',
+    tabProgress: 'Team Progress', tabWeekly: 'Weekly Output', tabReports: 'All Reports',
+    tabUsers: '👥 Users', tabCatalog: '🗂 Catalog', tabSettings: 'Settings',
+    // Worker cards
+    reports: 'Reports', headAssemblyMastery: 'Head Assembly Skill Mastery',
+    totalReports: 'Total Reports', sheetsUploads: 'Sheets Uploads',
+    noWorkers: 'No workers registered yet.',
+    // Weekly output
+    weekOf: 'Week of', total: 'TOTAL', headAssembly: 'Head Assembly',
+    prev: '← Prev', next: 'Next →',
+    // Reports list
+    sent: 'Sent', local: 'Local', noReports: 'No reports submitted yet.',
+    // Users tab
+    registeredUsers: 'Registered Users', removeUser: '🗑 Remove', noUsers: 'No registered users yet.',
+    // Catalog
+    addAssemblyLabel: 'Add Assembly', addAssemblyNote: 'If the assembly already exists in another product, its tasks will be shared.',
+    addNewProduct: 'Add New Product', catalogWarning: '⚠ Changes take effect immediately. Workers will see updated products and tasks on their next report.',
+    newTaskPlaceholder: 'New task name…', newAsmPlaceholder: 'Assembly name (e.g. Head Assembly)…',
+    newProductPlaceholder: 'Product name…', special: 'Special', addProduct: '+ Add Product', add: '+ Add',
+    // Settings tab
+    scriptUrlLabel: 'Google Apps Script URL', saveUrl: 'Save URL',
+    // Profile
+    profileTitle: 'My Profile', accountInfo: 'Account Info',
+    fullName: 'Full Name', username: 'Username', email: 'Email',
+    editProfile: 'Edit Profile', saveChanges: 'Save Changes',
+    changePassword: 'Change Password', currentPassword: 'Current Password',
+    newPassword: 'New Password', confirmPassword: 'Confirm New Password',
+    updatePassword: 'Update Password', session: 'Session', signOut: 'Sign Out',
+    fullNamePlaceholder: 'Your full name', curPassPlaceholder: 'Enter current password',
+    newPassPlaceholder: 'Enter new password', confPassPlaceholder: 'Repeat new password',
+    // Delete modal
+    cancel: 'Cancel',
+    // Context menu
+    rename: '✏️ Rename',
+    // Toasts
+    reportSent: '✓ Report sent to Google Sheets!', reportSaved: '✓ Report saved successfully!',
+    reportLocal: '⚠ Saved locally. Check Sheets connection.',
+    savedRedirect: '✓ Saved. Redirecting...', sendingBack: '✓ Sending you back...',
+  },
+  fr: {
+    loginSub: 'Système de rapport quotidien', loginUserLabel: "Nom d'utilisateur", loginPassLabel: 'Mot de passe',
+    loginBtn: 'Se connecter →', loginError: "Nom d'utilisateur ou mot de passe invalide.",
+    loginNoAccount: 'Pas de compte ?', loginRegisterLink: "S'inscrire ici",
+    logout: 'Déconnexion',
+    homeGreeting: 'Bonjour,',
+    menuReport: 'Rapport quotidien atelier', menuReportDesc: 'Soumettre votre rapport de production',
+    menuAdmin: 'Panneau admin', menuAdminDesc: "Voir la progression de l'équipe",
+    menuProfile: 'Mon profil', menuProfileDesc: 'Paramètres, changer le mot de passe',
+    back: '← Retour', selectProduct: 'Sélectionner un produit', selectAssembly: 'Sélectionner un assemblage',
+    dailyReport: 'Rapport quotidien', uploadReport: 'Envoyer le rapport →', sending: 'Envoi...',
+    taskOp: 'Tâche / Opération', qty: 'QTÉ',
+    skillsLabel: 'Compétences apprises / Maîtrisées',
+    skillsDesc: 'Sélectionnez toutes les tâches que vous avez apprises ou maîtrisées :',
+    notes: 'Notes / Autres', notesPlaceholder: 'Notes, problèmes ou observations supplémentaires...',
+    backdateTitle: 'Sélectionner la date', backdateReset: "Aujourd'hui",
+    backdateWarn: "⚠ Utilisez seulement si vous avez oublié de soumettre le jour même.",
+    backdateBtn: 'Antidater', products: 'Produits', specialProducts: 'Produits spéciaux',
+    noAssemblies: 'Aucun assemblage configuré pour ce produit.',
+    noProducts: 'Aucun produit configuré. Contactez votre gestionnaire.',
+    adminPanelTitle: 'Panneau admin',
+    tabProgress: 'Progression', tabWeekly: 'Production hebdo', tabReports: 'Tous les rapports',
+    tabUsers: '👥 Utilisateurs', tabCatalog: '🗂 Catalogue', tabSettings: 'Paramètres',
+    reports: 'Rapports', headAssemblyMastery: 'Maîtrise Assemblage Tête',
+    totalReports: 'Total rapports', sheetsUploads: 'Envois Sheets',
+    noWorkers: 'Aucun travailleur inscrit.',
+    weekOf: 'Semaine du', total: 'TOTAL', headAssembly: 'Assemblage Tête',
+    prev: '← Préc', next: 'Suiv →',
+    sent: 'Envoyé', local: 'Local', noReports: 'Aucun rapport soumis.',
+    registeredUsers: 'Utilisateurs inscrits', removeUser: '🗑 Retirer', noUsers: 'Aucun utilisateur inscrit.',
+    addAssemblyLabel: 'Ajouter un assemblage', addAssemblyNote: "Si l'assemblage existe déjà, ses tâches seront partagées.",
+    addNewProduct: 'Ajouter un produit', catalogWarning: '⚠ Les modifications prennent effet immédiatement.',
+    newTaskPlaceholder: 'Nom de la tâche…', newAsmPlaceholder: "Nom de l'assemblage…",
+    newProductPlaceholder: 'Nom du produit…', special: 'Spécial', addProduct: '+ Ajouter', add: '+ Ajouter',
+    scriptUrlLabel: 'URL Google Apps Script', saveUrl: 'Enregistrer',
+    profileTitle: 'Mon profil', accountInfo: 'Informations du compte',
+    fullName: 'Nom complet', username: "Nom d'utilisateur", email: 'Courriel',
+    editProfile: 'Modifier le profil', saveChanges: 'Enregistrer',
+    changePassword: 'Changer le mot de passe', currentPassword: 'Mot de passe actuel',
+    newPassword: 'Nouveau mot de passe', confirmPassword: 'Confirmer le nouveau mot de passe',
+    updatePassword: 'Mettre à jour', session: 'Session', signOut: 'Se déconnecter',
+    fullNamePlaceholder: 'Votre nom complet', curPassPlaceholder: 'Mot de passe actuel',
+    newPassPlaceholder: 'Nouveau mot de passe', confPassPlaceholder: 'Répéter le mot de passe',
+    cancel: 'Annuler',
+    rename: '✏️ Renommer',
+    reportSent: '✓ Rapport envoyé à Google Sheets !', reportSaved: '✓ Rapport enregistré !',
+    reportLocal: '⚠ Enregistré localement. Vérifiez la connexion Sheets.',
+    savedRedirect: '✓ Enregistré. Redirection...', sendingBack: '✓ Envoi en cours...',
+  }
+};
+
+// Helper: get current translation value
+function T(key) { return (TRANSLATIONS[currentLang] || TRANSLATIONS.en)[key] || TRANSLATIONS.en[key] || key; }
+
+let currentLang = localStorage.getItem('sf_lang') || 'en';
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem('sf_lang', lang);
+  applyLang();
+}
+
+function applyLang() {
+  // Sync lang buttons
+  ['lang-btn-en','lang-btn-fr','lang-btn-en-app','lang-btn-fr-app'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('active', (currentLang === 'en' && id.includes('-en')) || (currentLang === 'fr' && id.includes('-fr')));
+  });
+
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  const setph = (id, val) => { const el = document.getElementById(id); if (el) el.placeholder = val; };
+
+  // Login
+  set('login-sub-text', T('loginSub')); set('lbl-login-user', T('loginUserLabel'));
+  set('lbl-login-pass', T('loginPassLabel')); set('btn-login-submit', T('loginBtn'));
+  set('login-error', T('loginError')); set('login-register-text', T('loginNoAccount'));
+  set('login-register-link', T('loginRegisterLink'));
+  setph('login-user', currentLang === 'fr' ? "Entrez votre nom d'utilisateur" : 'Enter username');
+  setph('login-pass', currentLang === 'fr' ? 'Entrez votre mot de passe' : 'Enter password');
+
+  // App shell
+  set('btn-logout-main', T('logout'));
+  // Home
+  const greet = document.querySelector('.home-greeting'); if (greet) greet.textContent = T('homeGreeting');
+  const labels = document.querySelectorAll('.menu-card .menu-label');
+  const descs  = document.querySelectorAll('.menu-card .menu-desc');
+  if (labels[0]) labels[0].textContent = T('menuReport');   if (descs[0]) descs[0].textContent = T('menuReportDesc');
+  if (labels[1]) labels[1].textContent = T('menuAdmin');    if (descs[1]) descs[1].textContent = T('menuAdminDesc');
+  if (labels[2]) labels[2].textContent = T('menuProfile');  if (descs[2]) descs[2].textContent = T('menuProfileDesc');
+  // Back buttons
+  document.querySelectorAll('.btn-back').forEach(b => { b.textContent = T('back'); });
+  // Report form
+  set('th-task', T('taskOp')); set('th-qty', T('qty'));
+  set('skills-label', T('skillsLabel')); set('skills-desc', T('skillsDesc'));
+  set('notes-label', T('notes')); setph('report-notes', T('notesPlaceholder'));
+  set('backdate-title', T('backdateTitle')); set('backdate-reset-btn', T('backdateReset'));
+  set('backdate-warning', T('backdateWarn'));
+  const submitBtn = document.getElementById('submit-btn');
+  if (submitBtn && submitBtn.textContent !== T('sending')) submitBtn.textContent = T('uploadReport');
+  // Admin tabs
+  set('admin-panel-title', T('adminPanelTitle'));
+  set('tab-btn-progress', T('tabProgress')); set('tab-btn-weekly', T('tabWeekly'));
+  set('tab-btn-reports', T('tabReports')); set('tab-btn-users', T('tabUsers'));
+  set('tab-btn-catalog', T('tabCatalog')); set('tab-btn-settings', T('tabSettings'));
+  // Catalog menu item
+  const renameBtn = document.querySelector('#catalog-global-menu .catalog-dd-item:first-child');
+  if (renameBtn) renameBtn.textContent = T('rename');
+  // Delete modal cancel button
+  const cancelBtn = document.querySelector('#delete-modal button:first-child');
+  if (cancelBtn) cancelBtn.textContent = T('cancel');
+  // Profile page
+  set('profile-page-title', T('profileTitle')); set('profile-section-info', T('accountInfo'));
+  set('profile-lbl-name', T('fullName')); set('profile-lbl-user', T('username')); set('profile-lbl-email', T('email'));
+  set('profile-section-edit', T('editProfile')); set('profile-save-btn', T('saveChanges'));
+  set('profile-edit-lbl-name', T('fullName')); set('profile-edit-lbl-email', T('email'));
+  setph('profile-edit-name', currentLang === 'fr' ? 'Votre nom complet' : 'Your full name');
+  set('profile-section-pass', T('changePassword'));
+  set('profile-lbl-curpass', T('currentPassword')); set('profile-lbl-newpass', T('newPassword'));
+  set('profile-lbl-confpass', T('confirmPassword'));
+  setph('pass-current', T('curPassPlaceholder')); setph('pass-new', T('newPassPlaceholder')); setph('pass-confirm', T('confPassPlaceholder'));
+  set('profile-update-pass-btn', T('updatePassword'));
+  set('profile-section-session', T('session')); set('profile-signout-btn', T('signOut'));
+
+  // Re-render dynamic content so they pick up new language
+  if (document.getElementById('workers-list') && document.getElementById('workers-list').children.length > 0) renderWorkerProgress();
+  if (document.getElementById('weekly-output') && document.getElementById('weekly-output').children.length > 0) renderWeeklyOutput(currentWeekOffset);
+  if (document.getElementById('reports-list-admin') && document.getElementById('reports-list-admin').children.length > 0) renderReportsList();
+  if (document.getElementById('users-list-admin') && document.getElementById('users-list-admin').children.length > 0) renderUsers();
+  if (document.getElementById('product-grid-dynamic') && document.getElementById('product-grid-dynamic').children.length > 0) renderProductGrid();
+}
+
+// ── Render Users (admin) ──
+function renderUsers() {
+  const users = getUsers();
+  const reports = getReports();
+  const container = document.getElementById('users-list-admin');
+  if (!container) return;
+
+  const totalReports = reports.length;
+
+  let summaryHtml = `
+    <div class="users-summary">
+      <div class="users-summary-stat">
+        <div class="users-summary-num">${users.length}</div>
+        <div class="users-summary-lbl">${T('registeredUsers')}</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--border);"></div>
+      <div class="users-summary-stat">
+        <div class="users-summary-num">${totalReports}</div>
+        <div class="users-summary-lbl">${T('totalReports')}</div>
+      </div>
+    </div>`;
+
+  if (users.length === 0) {
+    container.innerHTML = summaryHtml + `<div class="empty-state">${T('noUsers')}</div>`;
+    return;
+  }
+
+  const cards = users.map(u => {
+    const initials = (u.name || u.username).split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+    const userReports = reports.filter(r => r.worker === (u.name || u.username) || r.worker === u.username).length;
+    return `
+      <div class="user-list-card">
+        <div class="user-list-avatar">${initials}</div>
+        <div class="user-list-info">
+          <div class="user-list-name">${u.name || u.username}</div>
+          <div class="user-list-meta">@${u.username}${u.email ? ' · ' + u.email : ''}</div>
+        </div>
+        <div class="user-list-stats">
+          <div class="user-list-count">${userReports}</div>
+          <div class="user-list-count-lbl">${T('reports')}</div>
+          <button class="btn-delete-user" onclick="deleteUser('${u.username.replace(/'/g,"\\'")}'">${T('removeUser')}</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = summaryHtml + cards;
+}
+
+function deleteUser(username) {
+  showDeleteModal(
+    currentLang === 'fr' ? 'Retirer cet utilisateur ?' : 'Remove user?',
+    '"' + username + '" ' + (currentLang === 'fr' ? 'sera retiré. Ses rapports restent dans le système.' : 'will be removed. Their reports stay in the system.'),
+    async () => {
+      try {
+        await db.doc('users/' + username).delete();
+        renderUsers();
+        showToast(currentLang === 'fr' ? 'Utilisateur retiré.' : 'User removed.');
+      } catch(e) { showToast('⚠ Could not remove user.'); }
+    }
+  );
+}
+
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('mgr-pass').addEventListener('keydown', e => { if(e.key==='Enter') doManagerLogin(); });
+document.getElementById('mgr-user').addEventListener('keydown', e => { if(e.key==='Enter') doManagerLogin(); });
+
+// iOS Safari fix: ensure buttons fire on touchend if onclick doesn't trigger
+(function() {
+  function iosTouchFix(selector, fn) {
+    const el = document.querySelector(selector);
+    if (!el) return;
+    el.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      fn();
+    }, { passive: false });
+  }
+  // Login button
+  document.querySelectorAll('button.btn-primary').forEach(btn => {
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      const onclick = btn.getAttribute('onclick');
+      if (onclick) { try { eval(onclick); } catch(err) {} }
+    }, { passive: false });
+  });
+})();
+
+// Secret manager access via URL hash: file.html#mgr
+(function checkHash() {
+  if (window.location.hash === '#' + MANAGER_SECRET_KEY) {
+    showManagerLogin();
+    history.replaceState(null, '', window.location.pathname); // clean the URL
+  }
+})();
+
+// Session is not persisted — user must log in each time for security
+// (Firebase data is always fresh on next load)
+
+// Bootstrap: load Firestore data, then apply language
+loadAllFromFirestore().then(() => applyLang());
+
+// Functions are globally accessible (regular script tag)
+</script>
+</body>
+</html>
